@@ -1,11 +1,9 @@
-import logging
 import os
+import sys
 from typing import Any
 import json
 
 import requests
-
-logger = logging.getLogger(__name__)
 
 LIGHTDASH_URL = os.getenv("LIGHTDASH_URL", "")
 LIGHTDASH_TOKEN = os.getenv("LIGHTDASH_TOKEN", "")
@@ -41,8 +39,9 @@ def _attach_iap_token() -> None:
         auth_req = google.auth.transport.requests.Request()
         token = google.oauth2.id_token.fetch_id_token(auth_req, IAP_CLIENT_ID)
         session.headers["Proxy-Authorization"] = f"Bearer {token}"
+        print(f"[IAP] Token attached (audience={IAP_CLIENT_ID[:20]}...)", file=sys.stderr)
     except Exception as e:
-        logger.warning("Failed to fetch IAP token: %s", e)
+        print(f"[IAP] Failed to fetch token: {e}", file=sys.stderr)
 
 
 def _handle_request(method: str, path: str, **kwargs) -> dict[str, Any]:
