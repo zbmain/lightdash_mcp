@@ -52,7 +52,14 @@ def _attach_iap_token() -> None:
         request = google.auth.transport.requests.Request()
         credentials.refresh(request)
 
-        sa_email = credentials.service_account_email
+        sa_email = getattr(credentials, "service_account_email", None)
+        if not sa_email:
+            # User credentials (ADC): impersonate the IAP service account
+            sa_email = os.getenv(
+                "IAP_SA",
+                "lightdash-cli-iap@wallet-data-483412.iam.gserviceaccount.com",
+            )
+
         signer = google.auth.iam.Signer(request, credentials, sa_email)
 
         exp = now + 3600
