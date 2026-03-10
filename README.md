@@ -1,5 +1,12 @@
 # Lightdash MCP Server
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![MCP](https://img.shields.io/badge/MCP-compatible-green.svg)](https://modelcontextprotocol.io/)
+[![GitHub stars](https://img.shields.io/github/stars/poddubnyoleg/lightdash_mcp)](https://github.com/poddubnyoleg/lightdash_mcp/stargazers)
+
+> Connect Claude, Cursor, and other AI assistants to your Lightdash analytics using the Model Context Protocol (MCP).
+
 A Model Context Protocol (MCP) server for interacting with [Lightdash](https://www.lightdash.com/), enabling LLMs to discover data, create charts, and manage dashboards programmatically.
 
 ## Features
@@ -25,7 +32,7 @@ This MCP server provides a comprehensive set of tools for the full data analytic
 The easiest way to use this MCP server is with `uvx`, which will automatically download and run it:
 
 ```bash
-uvx --from git+https://github.com/<owner>/lightdash_mcp lightdash-mcp
+uvx --from git+https://github.com/poddubnyoleg/lightdash_mcp lightdash-mcp
 ```
 
 ### Quick Start with pipx
@@ -33,13 +40,13 @@ uvx --from git+https://github.com/<owner>/lightdash_mcp lightdash-mcp
 Alternatively, you can use `pipx`:
 
 ```bash
-pipx run --spec git+https://github.com/<owner>/lightdash_mcp lightdash-mcp
+pipx run --spec git+https://github.com/poddubnyoleg/lightdash_mcp lightdash-mcp
 ```
 
 ### Install from Source
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/poddubnyoleg/lightdash_mcp.git
 cd lightdash_mcp
 pip install .
 ```
@@ -92,7 +99,7 @@ Add the following to your `claude_desktop_config.json`:
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/<owner>/lightdash_mcp",
+        "git+https://github.com/poddubnyoleg/lightdash_mcp",
         "lightdash-mcp"
       ],
       "env": {
@@ -116,7 +123,7 @@ If you prefer `pipx`, use this configuration:
       "args": [
         "run",
         "--spec",
-        "git+https://github.com/<owner>/lightdash_mcp",
+        "git+https://github.com/poddubnyoleg/lightdash_mcp",
         "lightdash-mcp"
       ],
       "env": {
@@ -127,9 +134,6 @@ If you prefer `pipx`, use this configuration:
   }
 }
 ```
-
-> **Note**: Replace `<owner>` with the GitHub username or organization hosting the repository.
-
 ### Usage with Other MCP Clients
 
 Export the environment variables before running:
@@ -303,7 +307,7 @@ Contributions are welcome! Please:
 
 ## License
 
-[Add your license here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
