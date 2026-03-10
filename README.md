@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-compatible-green.svg)](https://modelcontextprotocol.io/)
+[![PyPI](https://img.shields.io/pypi/v/lightdash-mcp.svg)](https://pypi.org/project/lightdash-mcp/)
 [![GitHub stars](https://img.shields.io/github/stars/poddubnyoleg/lightdash_mcp)](https://github.com/poddubnyoleg/lightdash_mcp/stargazers)
 
 > Connect Claude, Cursor, and other AI assistants to your Lightdash analytics using the Model Context Protocol (MCP).
@@ -27,20 +28,22 @@ This MCP server provides a comprehensive set of tools for the full data analytic
 *   A Lightdash instance (Cloud or self-hosted)
 *   Lightdash Personal Access Token (obtain from your Lightdash profile settings)
 
-### Quick Start with uvx (Recommended)
-
-The easiest way to use this MCP server is with `uvx`, which will automatically download and run it:
+### Quick Start with pip (Recommended)
 
 ```bash
-uvx --from git+https://github.com/poddubnyoleg/lightdash_mcp lightdash-mcp
+pip install lightdash-mcp
+```
+
+### Quick Start with uvx
+
+```bash
+uvx lightdash-mcp
 ```
 
 ### Quick Start with pipx
 
-Alternatively, you can use `pipx`:
-
 ```bash
-pipx run --spec git+https://github.com/poddubnyoleg/lightdash_mcp lightdash-mcp
+pipx run lightdash-mcp
 ```
 
 ### Install from Source
@@ -88,7 +91,7 @@ The server requires the following environment variables:
 3. Click **Generate new token**
 4. Copy the token (starts with `ldt_`)
 
-### Usage with Claude Desktop (uvx)
+### Usage with Claude Desktop
 
 Add the following to your `claude_desktop_config.json`:
 
@@ -97,35 +100,7 @@ Add the following to your `claude_desktop_config.json`:
   "mcpServers": {
     "lightdash": {
       "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/poddubnyoleg/lightdash_mcp",
-        "lightdash-mcp"
-      ],
-      "env": {
-        "LIGHTDASH_TOKEN": "ldt_your_token_here",
-        "LIGHTDASH_URL": "https://app.lightdash.cloud"
-      }
-    }
-  }
-}
-```
-
-### Usage with Claude Desktop (pipx)
-
-If you prefer `pipx`, use this configuration:
-
-```json
-{
-  "mcpServers": {
-    "lightdash": {
-      "command": "pipx",
-      "args": [
-        "run",
-        "--spec",
-        "git+https://github.com/poddubnyoleg/lightdash_mcp",
-        "lightdash-mcp"
-      ],
+      "args": ["lightdash-mcp"],
       "env": {
         "LIGHTDASH_TOKEN": "ldt_your_token_here",
         "LIGHTDASH_URL": "https://app.lightdash.cloud"
