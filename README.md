@@ -64,11 +64,18 @@ pip install lightdash-mcp[iap]
 pip install .[iap]
 ```
 
-Set `IAP_ENABLED=true`. The server will sign a service-account JWT (audience `{LIGHTDASH_URL}/*`) via the IAM Credentials API and attach it as `Proxy-Authorization: Bearer <jwt>` on every request. The `Authorization: ApiKey` header is preserved for Lightdash.
+Set `IAP_ENABLED=true`. The server will sign a JWT (audience `{LIGHTDASH_URL}/*`) via the IAM Credentials API and attach it as `Proxy-Authorization: Bearer <jwt>` on every request. The `Authorization: ApiKey` header is preserved for Lightdash.
 
-Requirements:
+Both service account credentials and user credentials (Application Default Credentials / ADC) are supported:
+
+**Service account credentials** (default in Cloud Run, GCE, etc.):
 - The runtime service account needs `roles/iam.serviceAccountTokenCreator` on itself
 - The runtime service account needs `roles/iap.httpsResourceAccessor` on the Cloud Run service
+
+**User credentials (ADC)** (e.g. `gcloud auth application-default login`):
+- Set `IAP_SA` to the service account email to impersonate for signing the JWT
+- The user needs `roles/iam.serviceAccountTokenCreator` on the target service account
+- The target service account needs `roles/iap.httpsResourceAccessor` on the Cloud Run service
 
 ## Configuration
 
@@ -83,6 +90,7 @@ The server requires the following environment variables:
 | `CF_ACCESS_CLIENT_ID` | ❌ | Cloudflare Access Client ID (if behind CF Access) | - |
 | `CF_ACCESS_CLIENT_SECRET` | ❌ | Cloudflare Access Client Secret (if behind CF Access) | - |
 | `IAP_ENABLED` | ❌ | Enable Google Cloud IAP authentication (`true`/`1`) | `true` |
+| `IAP_SA` | ❌ | Service account email for IAP when using user credentials (ADC) | `sa@project.iam.gserviceaccount.com` |
 
 ### Getting Your Lightdash Token
 
