@@ -117,6 +117,30 @@ Add the following to your `claude_desktop_config.json`:
   }
 }
 ```
+### Usage with Claude Code (CLI)
+
+Create or edit `.mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "lightdash": {
+      "type": "stdio",
+      "command": "lightdash-mcp",
+      "env": {
+        "LIGHTDASH_URL": "https://your-lightdash-instance.com",
+        "LIGHTDASH_TOKEN": "ldt_your_token_here",
+        "LIGHTDASH_PROJECT_UUID": "your-project-uuid"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Code and run `/mcp` to verify the server shows as connected.
+
+> **Note**: Don't commit `.mcp.json` if it contains secrets — add it to `.gitignore`.
+
 ### Usage with Other MCP Clients
 
 Export the environment variables before running:
