@@ -89,6 +89,7 @@ The server requires the following environment variables:
 | `LIGHTDASH_URL` | ✅ | Base URL of your Lightdash Instance | `https://app.lightdash.cloud` |
 | `CF_ACCESS_CLIENT_ID` | ❌ | Cloudflare Access Client ID (if behind CF Access) | - |
 | `CF_ACCESS_CLIENT_SECRET` | ❌ | Cloudflare Access Client Secret (if behind CF Access) | - |
+| `LIGHTDASH_PROJECT_UUID` | ❌ | Default project UUID (falls back to first available project) | `3fc2835f-...` |
 | `IAP_ENABLED` | ❌ | Enable Google Cloud IAP authentication (`true`/`1`) | `true` |
 | `IAP_SA` | ❌ | Service account email for IAP when using user credentials (ADC) | `sa@project.iam.gserviceaccount.com` |
 
@@ -111,7 +112,8 @@ Add the following to your `claude_desktop_config.json`:
       "args": ["lightdash-mcp"],
       "env": {
         "LIGHTDASH_TOKEN": "ldt_your_token_here",
-        "LIGHTDASH_URL": "https://app.lightdash.cloud"
+        "LIGHTDASH_URL": "https://app.lightdash.cloud",
+        "LIGHTDASH_PROJECT_UUID": "your-project-uuid"
       }
     }
   }
