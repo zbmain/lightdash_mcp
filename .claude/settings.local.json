@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv sync:*)",
+      "Bash(uv run:*)",
+      "Bash(just list-tools:*)",
+      "Bash(just validate-registry:*)",
+      "Bash(uv add:*)"
+    ]
+  }
+}
