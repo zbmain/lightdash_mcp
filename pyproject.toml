@@ -39,7 +39,7 @@ Changelog = "https://github.com/zbmain/lightdash_mcp/releases"
 [project.optional-dependencies]
 iap = ["google-auth>=2.0.0"]
 http = ["starlette>=0.27.0", "uvicorn>=0.20.0", "anyio>=3.0.0"]
-dev = ["pytest>=7.0.0", "pytest-mock>=3.0.0", "ruff>=0.1.0"]
+dev = ["pytest>=7.0.0", "pytest-mock>=3.0.0", "ruff>=0.1.0", "pre-commit>=3.0.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

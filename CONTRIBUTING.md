@@ -15,8 +15,11 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install dependencies
 uv sync
 
-# Install dev dependencies
-uv add --dev ruff pytest
+# Install dev dependencies (includes ruff and pre-commit)
+uv sync --dev
+
+# Set up pre-commit hooks (runs on every commit)
+pre-commit install
 ```
 
 ## Code Style

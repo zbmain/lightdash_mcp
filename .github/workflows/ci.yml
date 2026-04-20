@@ -24,6 +24,11 @@ jobs:
       - name: Run ruff check
         run: uv run ruff check .
 
+      - name: Check ruff format
+        run: |
+          uv run ruff format --check .
+          # Fail if format differs — forces contributors to run `ruff format`
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -55,5 +60,14 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Install hatchling
+        run: uv pip install hatchling
+
       - name: Build package
-        run: uv run python -m build
+        run: uv run hatchling build
+
+      - name: Verify build artifacts
+        run: |
+          ls -la dist/
+          test -f dist/lightdash_mcp-*.whl && echo "✅ wheel created"
+          test -f dist/lightdash_mcp-*.tar.gz && echo "✅ sdist created"
