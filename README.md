@@ -4,7 +4,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-compatible-green.svg)](https://modelcontextprotocol.io/)
 [![PyPI](https://img.shields.io/pypi/v/lightdash-mcp.svg)](https://pypi.org/project/lightdash-mcp/)
-[![GitHub stars](https://img.shields.io/github/stars/poddubnyoleg/lightdash_mcp)](https://github.com/poddubnyoleg/lightdash_mcp/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/zbmain/lightdash_mcp)](https://github.com/zbmain/lightdash_mcp/stargazers)
 
 > Connect Claude, Cursor, and other AI assistants to your Lightdash analytics using the Model Context Protocol (MCP).
 
@@ -49,7 +49,7 @@ pipx run lightdash-mcp
 ### Install from Source
 
 ```bash
-git clone https://github.com/poddubnyoleg/lightdash_mcp.git
+git clone https://github.com/zbmain/lightdash_mcp.git
 cd lightdash_mcp
 pip install .
 ```
@@ -92,6 +92,16 @@ The server requires the following environment variables:
 | `LIGHTDASH_PROJECT_UUID` | ❌ | Default project UUID (falls back to first available project) | `3fc2835f-...` |
 | `IAP_ENABLED` | ❌ | Enable Google Cloud IAP authentication (`true`/`1`) | `true` |
 | `IAP_SA` | ❌ | Service account email for IAP when using user credentials (ADC) | `sa@project.iam.gserviceaccount.com` |
+
+### HTTP Mode Configuration
+
+HTTP mode requires additional environment variables:
+
+| Variable | Required | Description | Example |
+| :--- | :---: | :--- | :--- |
+| `LIGHTDASH_MCP_HTTP_APIKEY` | ✅ | JWT signing secret (min 32 bytes recommended) | `your-256-bit-secret` |
+| `LIGHTDASH_MCP_HTTP_HOST` | ❌ | HTTP server bind address (default: `0.0.0.0`) | `127.0.0.1` |
+| `LIGHTDASH_MCP_HTTP_PORT` | ❌ | HTTP server port (default: `8080`) | `9000` |
 
 ### Getting Your Lightdash Token
 
@@ -143,6 +153,43 @@ Restart Claude Code and run `/mcp` to verify the server shows as connected.
 
 > **Note**: Don't commit `.mcp.json` if it contains secrets — add it to `.gitignore`.
 
+### Usage with MCP Clients via HTTP (Remote Deployment)
+
+For remote/multi-client deployments, run the server in HTTP mode:
+
+```bash
+# Install with HTTP dependencies
+pip install lightdash-mcp[http]
+
+# Start HTTP server (requires LIGHTDASH_MCP_HTTP_APIKEY)
+LIGHTDASH_MCP_HTTP_APIKEY="your-jwt-secret" \
+LIGHTDASH_URL="https://app.lightdash.cloud" \
+LIGHTDASH_TOKEN="ldt_your_token_here" \
+lightdash-mcp http
+```
+
+HTTP clients connect with:
+
+```
+HTTP endpoint: http://host:port/mcp/   (GET  — SSE event stream)
+HTTP endpoint: http://host:port/mcp/   (POST — client messages)
+HTTP endpoint: http://host:port/messages/  (POST — client messages, alternative)
+HTTP endpoint: http://host:port/health    (GET  — health check, no auth)
+```
+
+All MCP endpoints require `Authorization: Bearer <jwt>` header. The JWT payload is validated server-side using `LIGHTDASH_MCP_HTTP_APIKEY`.
+
+**Client credential override**: HTTP clients can override server-side Lightdash credentials per-request:
+
+```
+Authorization: Bearer <jwt>                      # JWT auth (required)
+X-Lightdash-Url: https://custom.lightdash.cloud  # Override LIGHTDASH_URL
+X-Lightdash-Token: ldt_client_token             # Override LIGHTDASH_TOKEN
+X-Lightdash-Project-Uuid: project-uuid          # Override LIGHTDASH_PROJECT_UUID
+```
+
+Unset headers fall back to the server's environment variables.
+
 ### Usage with Other MCP Clients
 
 Export the environment variables before running:
@@ -165,6 +212,7 @@ lightdash-mcp
 | `get-explore-schema` | Get detailed schema for a specific explore (dimensions, metrics, joins) |
 | `list-spaces` | List all spaces (folders) in the project |
 | `get-custom-metrics` | Get custom metrics defined in the project |
+| `list-table-field-values` | Search for unique field values in a specific table column |
 
 ### 📈 Chart Management
 
@@ -173,26 +221,16 @@ lightdash-mcp
 | `list-charts` | List all saved charts, optionally filtered by name |
 | `search-charts` | Search for charts by name or description |
 | `get-chart-details` | Get complete configuration of a specific chart |
-| `create-chart` | Create a new saved chart with metric query and visualization config |
-| `update-chart` | Update an existing chart's configuration (name, description, queries, visualization) |
 | `run-chart-query` | Execute a chart's query and retrieve the data |
-| `delete-chart` | Delete a saved chart |
 
 ### 📋 Dashboard Management
 
 | Tool | Description |
 | :--- | :--- |
 | `list-dashboards` | List all dashboards in the project |
-| `create-dashboard` | Create a new dashboard (empty or with tiles) |
-| `duplicate-dashboard` | Clone an existing dashboard with a new name |
 | `get-dashboard-tiles` | Get all tiles from a dashboard with optional full config |
 | `get-dashboard-tile-chart-config` | Get complete chart configuration for a specific dashboard tile |
 | `get-dashboard-code` | Get the complete dashboard configuration as code |
-| `create-dashboard-tile` | Add a new tile (chart, markdown, or loom) to a dashboard |
-| `update-dashboard-tile` | Update tile properties (position, size, content) |
-| `rename-dashboard-tile` | Rename a dashboard tile |
-| `delete-dashboard-tile` | Remove a tile from a dashboard |
-| `update-dashboard-filters` | Update dashboard-level filters |
 | `run-dashboard-tiles` | Execute one, multiple, or all tiles on a dashboard concurrently |
 
 ### 🔍 Query Execution
@@ -203,25 +241,28 @@ lightdash-mcp
 | `run-dashboard-tiles` | Run queries for dashboard tiles (supports bulk execution) |
 | `run-raw-query` | Execute an ad-hoc metric query against any explore |
 
-### 🗂️ Resource Management
+### 🗂 Query Results
 
 | Tool | Description |
 | :--- | :--- |
-| `create-space` | Create a new space to organize charts and dashboards |
-| `delete-space` | Delete an empty space |
+| `run-chart-query` | Execute a saved chart's query and return data |
+| `run-dashboard-tiles` | Run queries for dashboard tiles (supports bulk execution) |
+| `run-raw-query` | Execute an ad-hoc metric query against any explore |
 
 ## Project Structure
 
 ```
 .
-├── pyproject.toml              # Package configuration
-├── lightdash_mcp/              # Main package
-│   ├── __init__.py             # Package init
-│   ├── server.py               # MCP server entry point
-│   ├── lightdash_client.py     # Lightdash API client
-│   └── tools/                  # Tool implementations
-│       ├── __init__.py         # Auto-discovery and tool registry
-│       ├── base_tool.py        # Base tool interface
+├── Justfile                     # Just commands for common development tasks
+├── pyproject.toml               # Package configuration
+├── lightdash_mcp/               # Main package
+│   ├── __init__.py              # Package init
+│   ├── server.py                # MCP server entry point
+│   ├── lightdash_client.py      # Lightdash API client
+│   ├── tools_registry.yml       # Tool registry configuration (YAML)
+│   └── tools/                   # Tool implementations
+│       ├── __init__.py          # Auto-discovery and tool registry (YAML filtered)
+│       ├── base_tool.py         # Base tool interface
 │       └── *.py                # Individual tool implementations
 ├── README.md
 └── LICENSE
@@ -229,9 +270,26 @@ lightdash-mcp
 
 ## Development
 
-### Adding a New Tool
+Tools are automatically discovered and filtered via two mechanisms:
 
-The server automatically discovers and registers tools from the `tools/` directory. To add a new tool:
+1. **Auto-discovery**: `tools/__init__.py` scans the `tools/` directory for Python modules
+2. **YAML filtering**: Only tools with `enabled: true` in `tools_registry.yml` are registered
+
+### tools_registry.yml
+
+A centralized YAML configuration (`lightdash_mcp/tools_registry.yml`) controls which tools are active. This allows you to:
+- Enable/disable individual tools without removing code
+- Group tools by category (discovery, chart, dashboard, query, resource)
+- Keep disabled tools in the codebase for future use
+
+```yaml
+tools:
+  - name: list-projects
+    category: discovery
+    enabled: true   # ← only enabled tools are registered
+```
+
+### Adding a New Tool
 
 1.  **Create a new file** in `lightdash_mcp/tools/` (e.g., `my_new_tool.py`)
 
@@ -240,30 +298,32 @@ The server automatically discovers and registers tools from the `tools/` directo
     from pydantic import BaseModel, Field
     from .base_tool import ToolDefinition
     from .. import lightdash_client as client
-    
+
     class MyToolInput(BaseModel):
         param1: str = Field(..., description="Description of param1")
-    
+
     TOOL_DEFINITION = ToolDefinition(
         name="my-new-tool",
         description="Description of what this tool does",
         input_schema=MyToolInput
     )
-    
+
     def run(param1: str) -> dict:
         """Execute the tool logic"""
         result = client.get(f"/api/v1/some/endpoint/{param1}")
         return result
     ```
 
-3.  **Restart the server** - the tool will be automatically registered
+3.  **Register in YAML**: Add the tool entry to `tools_registry.yml` with `enabled: true`
 
-### Tool Registry
+4.  **Restart the server** — the tool will be automatically registered
 
-Tools are automatically discovered via `tools/__init__.py`, which:
-*   Scans the `tools/` directory for Python modules
-*   Imports each module (excluding utility modules)
-*   Registers tools by their `TOOL_DEFINITION.name`
+### Validating the Registry
+
+```bash
+# Check that YAML config and discovered tools are in sync
+just validate-registry
+```
 
 ### Testing
 
@@ -285,7 +345,7 @@ print(result)
 ### Authentication Errors
 
 If you see `401 Unauthorized` errors:
-*   Verify your `LIGHTDASH_TOKEN` is correct and starts with `ldt_`
+*   Verify your `LIGHTDASH_TOKEN` is correct and starts with `ldt_/ldpat_`
 *   Check that the token hasn't expired
 *   Ensure you have the necessary permissions in Lightdash
 
@@ -297,6 +357,17 @@ If you see connection errors:
 *   For self-hosted: use `https://your-domain.com`
 *   If behind Cloudflare Access, ensure `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` are set
 *   If behind Google Cloud IAP, ensure `IAP_ENABLED=true` is set, install with `pip install lightdash-mcp[iap]`, and verify the service account has `serviceAccountTokenCreator` on itself
+
+### HTTP Mode Errors
+
+If you see `401 Unauthorized` in HTTP mode:
+*   Verify `LIGHTDASH_MCP_HTTP_APIKEY` is set on the server
+*   Ensure the JWT token is valid and not expired
+*   Check the client sends `Authorization: Bearer <token>` header
+
+If you see `500 MCP error`:
+*   Check server logs for detailed error messages
+*   Verify Lightdash credentials (URL and token) are correct
 
 ### Tool Not Found
 
@@ -317,6 +388,10 @@ Contributions are welcome! Please:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+* [ccstatusline/lightdash_mcp](https://github.com/poddubnyoleg/lightdash_mcp) - Original project this fork is based on.
 
 ## Support
 

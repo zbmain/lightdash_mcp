@@ -11,11 +11,12 @@ def get_chart(chart_uuid: str) -> dict[str, Any]:
     response = lightdash_client.get(f"/api/v1/saved/{chart_uuid}")
     return response.get("results", {})
 
+
 TOOL_DEFINITION = ToolDefinition(
     name="get-dashboard-tile-chart-config",
     description="""Get the complete chart configuration for a dashboard tile, including dashboard-only charts.
 
-Dashboard-only charts store their full configuration (metric query, chart config, visualization settings) 
+Dashboard-only charts store their full configuration (metric query, chart config, visualization settings)
 directly in the dashboard tile structure. This tool extracts that complete configuration.
 
 **Returns:**
@@ -40,49 +41,50 @@ directly in the dashboard tile structure. This tool extracts that complete confi
         "properties": {
             "dashboard_name": ToolParameter(
                 type="string",
-                description="Name of the dashboard (supports partial matching)"
+                description="Name of the dashboard (supports partial matching)",
             ),
             "tile_identifier": ToolParameter(
                 type="string",
-                description="Title of the tile or partial match to identify which tile"
-            )
+                description="Title of the tile or partial match to identify which tile",
+            ),
         },
-        "required": ["dashboard_name", "tile_identifier"]
-    }
+        "required": ["dashboard_name", "tile_identifier"],
+    },
 )
+
 
 def run(dashboard_name: str, tile_identifier: str) -> dict[str, Any]:
     """Run the get dashboard tile chart config tool"""
     project_uuid = get_project_uuid()
     dashboards = list_dashboards(project_uuid)
-    
+
     dashboard_uuid = None
     for dash in dashboards:
         if dash.get("name", "").lower() == dashboard_name.lower():
             dashboard_uuid = dash.get("uuid")
             break
-    
+
     if not dashboard_uuid:
         for dash in dashboards:
             if dashboard_name.lower() in dash.get("name", "").lower():
                 dashboard_uuid = dash.get("uuid")
                 break
-    
+
     if not dashboard_uuid:
         raise ValueError(f"Dashboard '{dashboard_name}' not found")
 
     dashboard = get_dashboard(dashboard_uuid)
     tiles = dashboard.get("tiles", [])
-    
+
     target_tile = None
     for tile in tiles:
         props = tile.get("properties", {})
         title = props.get("title", "") or props.get("chartName", "")
-        
+
         if tile_identifier.lower() in title.lower():
             target_tile = tile
             break
-            
+
     if not target_tile:
         available_tiles = []
         for tile in tiles:
@@ -90,12 +92,14 @@ def run(dashboard_name: str, tile_identifier: str) -> dict[str, Any]:
             title = props.get("title", "") or props.get("chartName", "")
             if title:
                 available_tiles.append(title)
-        
-        raise ValueError(f"Tile '{tile_identifier}' not found on dashboard. Available tiles: {available_tiles}")
+
+        raise ValueError(
+            f"Tile '{tile_identifier}' not found on dashboard. Available tiles: {available_tiles}"
+        )
 
     tile_type = target_tile.get("type")
     props = target_tile.get("properties", {})
-    
+
     result = {
         "tile_uuid": target_tile.get("uuid"),
         "tile_type": tile_type,
@@ -104,10 +108,10 @@ def run(dashboard_name: str, tile_identifier: str) -> dict[str, Any]:
             "x": target_tile.get("x"),
             "y": target_tile.get("y"),
             "w": target_tile.get("w"),
-            "h": target_tile.get("h")
-        }
+            "h": target_tile.get("h"),
+        },
     }
-    
+
     if tile_type == "saved_chart":
         if "belongsToChart" in target_tile:
             chart_config = target_tile["belongsToChart"]
@@ -121,13 +125,13 @@ def run(dashboard_name: str, tile_identifier: str) -> dict[str, Any]:
                 "tableConfig": chart_config.get("tableConfig"),
                 "pivotConfig": chart_config.get("pivotConfig"),
                 "updatedAt": chart_config.get("updatedAt"),
-                "updatedByUser": chart_config.get("updatedByUser")
+                "updatedByUser": chart_config.get("updatedByUser"),
             }
         elif "savedChartUuid" in props or "chartUuid" in props:
             chart_uuid = props.get("savedChartUuid") or props.get("chartUuid")
             result["chart_type"] = "saved_chart_reference"
             result["savedChartUuid"] = chart_uuid
-            
+
             try:
                 chart = get_chart(chart_uuid)
                 result["configuration"] = {
@@ -139,7 +143,7 @@ def run(dashboard_name: str, tile_identifier: str) -> dict[str, Any]:
                     "tableConfig": chart.get("tableConfig"),
                     "pivotConfig": chart.get("pivotConfig"),
                     "spaceUuid": chart.get("spaceUuid"),
-                    "updatedAt": chart.get("updatedAt")
+                    "updatedAt": chart.get("updatedAt"),
                 }
             except Exception as e:
                 result["error"] = f"Could not fetch saved chart: {str(e)}"
@@ -147,13 +151,13 @@ def run(dashboard_name: str, tile_identifier: str) -> dict[str, Any]:
         result["chart_type"] = "markdown"
         result["configuration"] = {
             "content": props.get("content", ""),
-            "title": props.get("title", "")
+            "title": props.get("title", ""),
         }
     elif tile_type == "loom":
         result["chart_type"] = "loom"
         result["configuration"] = {
             "url": props.get("url", ""),
-            "title": props.get("title", "")
+            "title": props.get("title", ""),
         }
     elif tile_type == "sql_chart":
         result["chart_type"] = "sql_chart"
@@ -165,5 +169,5 @@ def run(dashboard_name: str, tile_identifier: str) -> dict[str, Any]:
     else:
         result["chart_type"] = "unknown"
         result["raw_properties"] = props
-        
+
     return result

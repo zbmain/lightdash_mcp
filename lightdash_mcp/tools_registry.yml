@@ -1,0 +1,170 @@
+# Tool Registry Configuration
+# ============================
+# 此文件用于管理 MCP 工具注册。
+# 只有在此处 enabled=true 的工具才会被注册到 MCP 服务器。
+#
+# 工具注册流程:
+#   1. tools/__init__.py 自动扫描 tools/ 目录下的所有 Python 模块
+#   2. 仅当工具在 registry.yml 中 enabled=true 时才会被注册
+#   3. disabled 工具会被完全排除，不会出现在 MCP 工具列表中
+#
+# 添加新工具:
+#   1. 在 tools/ 目录下创建新的 .py 文件，定义 TOOL_DEFINITION 和 run() 函数
+#   2. 在本文件的对应分类下添加条目，设置 enabled=true
+#   3. 重启 MCP 服务器即可生效
+
+# ============================================================
+# 工具分类列表
+# ============================================================
+
+tools:
+
+  # ---------- Discovery & Metadata ----------
+  - name: list-projects
+    description: List all available Lightdash projects
+    category: discovery
+    enabled: true
+
+  - name: get-project
+    description: Get detailed information about a specific project
+    category: discovery
+    enabled: true
+
+  - name: list-explores
+    description: List all available explores/tables in a project
+    category: discovery
+    enabled: true
+
+  - name: get-explore-schema
+    description: Get detailed schema for a specific explore (dimensions, metrics, joins)
+    category: discovery
+    enabled: true
+
+  - name: get-custom-metrics
+    description: Get custom metrics defined in the project
+    category: discovery
+    enabled: true
+
+  - name: list-table-field-values
+    description: Search for unique field values in a specific table column
+    category: discovery
+    enabled: true
+
+  # ---------- Resource Management ----------
+  - name: list-spaces
+    description: List all spaces (folders) in the project
+    category: resource
+    enabled: true
+
+  - name: create-space
+    description: Create a new space to organize charts and dashboards
+    category: resource
+    enabled: false
+
+  - name: delete-space
+    description: Delete an empty space
+    category: resource
+    enabled: false
+
+  # ---------- Chart Management ----------
+  - name: list-charts
+    description: List all saved charts, optionally filtered by name
+    category: chart
+    enabled: true
+
+  - name: search-charts
+    description: Search for charts by name or description
+    category: chart
+    enabled: true
+
+  - name: get-chart-details
+    description: Get complete configuration of a specific chart
+    category: chart
+    enabled: true
+
+  - name: create-chart
+    description: Create a new saved chart with metric query and visualization config
+    category: chart
+    enabled: false
+
+  - name: update-chart
+    description: Update an existing chart's configuration (name, description, queries, visualization)
+    category: chart
+    enabled: false
+
+  - name: delete-chart
+    description: Delete a saved chart
+    category: chart
+    enabled: false
+
+  - name: run-chart-query
+    description: Execute a saved chart's query and return data
+    category: chart
+    enabled: true
+
+  # ---------- Dashboard Management ----------
+  - name: list-dashboards
+    description: List all dashboards in the project
+    category: dashboard
+    enabled: true
+
+  - name: create-dashboard
+    description: Create a new dashboard (empty or with tiles)
+    category: dashboard
+    enabled: false
+
+  - name: duplicate-dashboard
+    description: Clone an existing dashboard with a new name
+    category: dashboard
+    enabled: false
+
+  - name: get-dashboard-tiles
+    description: Get all tiles from a dashboard with optional full config
+    category: dashboard
+    enabled: true
+
+  - name: get-dashboard-tile-chart-config
+    description: Get complete chart configuration for a specific dashboard tile
+    category: dashboard
+    enabled: true
+
+  - name: get-dashboard-code
+    description: Get the complete dashboard configuration as code
+    category: dashboard
+    enabled: true
+
+  - name: create-dashboard-tile
+    description: Add a new tile (chart, markdown, or loom) to a dashboard
+    category: dashboard
+    enabled: false
+
+  - name: update-dashboard-tile
+    description: Update tile properties (position, size, content)
+    category: dashboard
+    enabled: false
+
+  - name: rename-dashboard-tile
+    description: Rename a dashboard tile
+    category: dashboard
+    enabled: false
+
+  - name: delete-dashboard-tile
+    description: Remove a tile from a dashboard
+    category: dashboard
+    enabled: false
+
+  - name: update-dashboard-filters
+    description: Update dashboard-level filters
+    category: dashboard
+    enabled: false
+
+  - name: run-dashboard-tiles
+    description: Execute one, multiple, or all tiles on a dashboard concurrently
+    category: dashboard
+    enabled: true
+
+  # ---------- Query Execution ----------
+  - name: run-raw-query
+    description: Execute an ad-hoc metric query against any explore
+    category: query
+    enabled: true

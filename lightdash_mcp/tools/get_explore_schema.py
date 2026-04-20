@@ -25,7 +25,7 @@ This is **essential before creating charts** to understand what fields exist and
 - `hidden`: Whether field is hidden by default
 - `sql`: For metrics, the SQL expression used
 
-**When to use:** 
+**When to use:**
 - **Before creating any chart** - to find correct field IDs
 - To understand available data and metrics
 - To discover join relationships between tables
@@ -43,98 +43,109 @@ This is **essential before creating charts** to understand what fields exist and
         "properties": {
             "table_name": ToolParameter(
                 type="string",
-                description="Name of the table/explore to introspect. This is the exploreName from your dbt models (e.g., 'snowplow__events_processed', 'wallet_users', 'orders'). Use get-catalog to discover available explore names."
+                description="Name of the table/explore to introspect. This is the exploreName from your dbt models (e.g., 'snowplow__events_processed', 'wallet_users', 'orders'). Use get-catalog to discover available explore names.",
             ),
             "include_hidden": ToolParameter(
                 type="boolean",
-                description="Optional: Include hidden fields in the response (default: false). Hidden fields are typically internal or technical fields not meant for general use."
-            )
+                description="Optional: Include hidden fields in the response (default: false). Hidden fields are typically internal or technical fields not meant for general use.",
+            ),
         },
-        "required": ["table_name"]
-    }
+        "required": ["table_name"],
+    },
 )
+
 
 def run(table_name: str, include_hidden: bool = False) -> dict[str, Any]:
     """Run the get explore schema tool"""
     project_uuid = get_project_uuid()
-    
+
     try:
-        response = lightdash_client.get(f"/api/v1/projects/{project_uuid}/explores/{table_name}")
+        response = lightdash_client.get(
+            f"/api/v1/projects/{project_uuid}/explores/{table_name}"
+        )
         explore = response.get("results", {})
-        
+
         base_table = explore.get("baseTable", table_name)
         tables = explore.get("tables", {})
         joins = explore.get("joinedTables", [])
-        
+
         result = {
             "exploreName": explore.get("name", table_name),
             "baseTable": base_table,
             "label": explore.get("label", ""),
             "tags": explore.get("tags", []),
-            "tables": {}
+            "tables": {},
         }
-        
+
         for table_key, table_data in tables.items():
             table_info = {
                 "name": table_data.get("name", table_key),
                 "label": table_data.get("label", ""),
                 "description": table_data.get("description", ""),
                 "dimensions": [],
-                "metrics": []
+                "metrics": [],
             }
-            
+
             dimensions = table_data.get("dimensions", {})
             for dim_key, dim_data in dimensions.items():
                 if not include_hidden and dim_data.get("hidden", False):
                     continue
-                
-                table_info["dimensions"].append({
-                    "name": dim_data.get("name", dim_key),
-                    "fieldId": f"{table_key}_{dim_data.get('name', dim_key)}",
-                    "type": dim_data.get("type", ""),
-                    "label": dim_data.get("label", ""),
-                    "description": dim_data.get("description", ""),
-                    "hidden": dim_data.get("hidden", False),
-                    "table": dim_data.get("table", table_key)
-                })
-            
+
+                table_info["dimensions"].append(
+                    {
+                        "name": dim_data.get("name", dim_key),
+                        "fieldId": f"{table_key}_{dim_data.get('name', dim_key)}",
+                        "type": dim_data.get("type", ""),
+                        "label": dim_data.get("label", ""),
+                        "description": dim_data.get("description", ""),
+                        "hidden": dim_data.get("hidden", False),
+                        "table": dim_data.get("table", table_key),
+                    }
+                )
+
             metrics = table_data.get("metrics", {})
             for metric_key, metric_data in metrics.items():
                 if not include_hidden and metric_data.get("hidden", False):
                     continue
-                
-                table_info["metrics"].append({
-                    "name": metric_data.get("name", metric_key),
-                    "fieldId": f"{table_key}_{metric_data.get('name', metric_key)}",
-                    "type": metric_data.get("type", ""),
-                    "label": metric_data.get("label", ""),
-                    "description": metric_data.get("description", ""),
-                    "hidden": metric_data.get("hidden", False),
-                    "table": metric_data.get("table", table_key),
-                    "sql": metric_data.get("sql", "")
-                })
-            
+
+                table_info["metrics"].append(
+                    {
+                        "name": metric_data.get("name", metric_key),
+                        "fieldId": f"{table_key}_{metric_data.get('name', metric_key)}",
+                        "type": metric_data.get("type", ""),
+                        "label": metric_data.get("label", ""),
+                        "description": metric_data.get("description", ""),
+                        "hidden": metric_data.get("hidden", False),
+                        "table": metric_data.get("table", table_key),
+                        "sql": metric_data.get("sql", ""),
+                    }
+                )
+
             result["tables"][table_key] = table_info
-            
+
         result["joins"] = []
         for join in joins:
-            result["joins"].append({
-                "table": join.get("table", ""),
-                "type": join.get("type", "left"),
-                "sqlOn": join.get("sqlOn", "")
-            })
-            
+            result["joins"].append(
+                {
+                    "table": join.get("table", ""),
+                    "type": join.get("type", "left"),
+                    "sqlOn": join.get("sqlOn", ""),
+                }
+            )
+
         total_dimensions = sum(len(t["dimensions"]) for t in result["tables"].values())
         total_metrics = sum(len(t["metrics"]) for t in result["tables"].values())
-        
+
         result["summary"] = {
             "totalTables": len(result["tables"]),
             "totalDimensions": total_dimensions,
             "totalMetrics": total_metrics,
-            "totalJoins": len(result["joins"])
+            "totalJoins": len(result["joins"]),
         }
-        
+
         return result
-        
+
     except Exception as e:
-        raise ValueError(f"Error fetching explore schema for '{table_name}': {str(e)}\n\nMake sure the explore/table name is correct. Use list-charts to see examples of table names used in existing charts.") from None
+        raise ValueError(
+            f"Error fetching explore schema for '{table_name}': {str(e)}\n\nMake sure the explore/table name is correct. Use list-charts to see examples of table names used in existing charts."
+        ) from None

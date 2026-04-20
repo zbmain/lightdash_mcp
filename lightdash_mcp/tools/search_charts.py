@@ -13,37 +13,41 @@ Performs case-insensitive partial matching against:
 
 Returns matching charts with their UUID, name, space, and description.
 
-**When to use:** 
+**When to use:**
 - To find charts related to a topic or metric
 - When you know part of a chart's name but not the exact name
 - To discover charts by business term (if described well)
 
 **Difference from list-charts:** This searches both name AND description, while list-charts only filters by name.""",
     inputSchema={
+        "type": "object",
         "properties": {
             "search_term": ToolParameter(
                 type="string",
-                description="Search term to match against chart names and descriptions (case-insensitive). Example: 'user retention' will match charts with those words in name or description"
+                description="Search term to match against chart names and descriptions (case-insensitive). Example: 'user retention' will match charts with those words in name or description",
             )
         },
-        "required": ["search_term"]
-    }
+        "required": ["search_term"],
+    },
 )
+
 
 def run(search_term: str) -> list[dict[str, Any]]:
     """Run the search charts tool"""
     charts = list_charts()
-    
+
     results = []
     for chart in charts:
-        name = chart.get("name", "").lower()
-        desc = chart.get("description", "").lower()
+        name = (chart.get("name", "") or "").lower()
+        desc = (chart.get("description", "") or "").lower()
         if search_term.lower() in name or search_term.lower() in desc:
-            results.append({
-                "uuid": chart.get("uuid"),
-                "name": chart.get("name"),
-                "space": chart.get("spaceName", ""),
-                "description": chart.get("description", "")
-            })
-            
+            results.append(
+                {
+                    "uuid": chart.get("uuid"),
+                    "name": chart.get("name"),
+                    "space": chart.get("spaceName", ""),
+                    "description": chart.get("description", ""),
+                }
+            )
+
     return results

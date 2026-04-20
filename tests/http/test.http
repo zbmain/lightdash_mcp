@@ -1,0 +1,47 @@
+###
+# Lightdash MCP HTTP 端点测试
+#
+# 前置条件：
+#   1. 启动服务器: just run-http
+#   2. 生成 JWT token（用于 Authorization header）
+#
+# 生成 token（Python）：
+#   import jwt
+#   secret = "your-LIGHTDASH_MCP_HTTP_APIKEY"
+#   token = jwt.encode({"sub": "test"}, secret, algorithm="HS256")
+#   print(token)
+#
+# ⚠️  MCP 使用 Streamable HTTP 协议，标准 HTTP 客户端无法完整测试。
+#     请使用 tests/http/test_http_tools.py 进行完整测试。
+###
+
+### 健康检查（无需认证）
+GET http://127.0.0.1:8080/health
+
+### MCP 端点需要 JWT 认证
+# Authorization: Bearer <your-jwt-token>
+# Accept: text/event-stream
+GET http://127.0.0.1:8080/mcp/
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0In0.test
+Accept: application/json, text/event-stream
+
+### POST 消息端点
+POST http://127.0.0.1:8080/messages/
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0In0.test
+Accept: application/json, text/event-stream
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "http-test",
+      "version": "1.0.0"
+    }
+  }
+}

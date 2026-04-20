@@ -16,7 +16,7 @@ Spaces are organizational folders that contain charts and dashboards.
 - Count of charts in the space
 - Count of dashboards in the space
 
-**When to use:** 
+**When to use:**
 - To discover organizational structure of content
 - To find space UUIDs for creating charts
 - To get an overview of content organization
@@ -25,25 +25,26 @@ Spaces are organizational folders that contain charts and dashboards.
 **Space types:**
 - Public spaces: Visible to all project users
 - Private spaces: Restricted to specific users/groups""",
-    inputSchema={
-        "properties": {}
-    }
+    inputSchema={"properties": {}},
 )
+
 
 def run() -> list[dict[str, Any]]:
     """Run the list spaces tool"""
     project_uuid = get_project_uuid()
     response = lightdash_client.get(f"/api/v1/projects/{project_uuid}/spaces")
     spaces = response.get("results", [])
-    
+
     result = []
     for space in spaces:
-        result.append({
-            "uuid": space.get("uuid"),
-            "name": space.get("name"),
-            "isPrivate": space.get("isPrivate", False),
-            "chartCount": len(space.get("queries", [])),
-            "dashboardCount": len(space.get("dashboards", []))
-        })
-        
+        result.append(
+            {
+                "uuid": space.get("uuid"),
+                "name": space.get("name"),
+                "isPrivate": space.get("isPrivate", False),
+                "chartCount": len(space.get("queries", [])),
+                "dashboardCount": len(space.get("dashboards", [])),
+            }
+        )
+
     return result

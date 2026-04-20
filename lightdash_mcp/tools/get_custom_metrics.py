@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from .. import lightdash_client
 from .base_tool import ToolDefinition, ToolParameter
@@ -26,16 +26,17 @@ Returns:
         "properties": {
             "project_uuid": ToolParameter(
                 type="string",
-                description="Optional: UUID of the project. If not provided, uses current project."
+                description="Optional: UUID of the project. If not provided, uses current project.",
             )
         }
-    }
+    },
 )
 
-def run(project_uuid: Optional[str] = None) -> list[dict[str, Any]]:
+
+def run(project_uuid: str | None = None) -> list[dict[str, Any]]:
     """Run the get custom metrics tool"""
     if not project_uuid:
         project_uuid = get_project_uuid()
-    
+
     response = lightdash_client.get(f"/api/v1/projects/{project_uuid}/custom-metrics")
     return response.get("results", [])

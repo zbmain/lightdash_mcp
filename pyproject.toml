@@ -4,24 +4,72 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lightdash-mcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "Model Context Protocol (MCP) server for Lightdash analytics platform"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
+authors = [{name = "zbmain", email = "zb@example.com"}]
+keywords = ["lightdash", "mcp", "model-context-protocol", "analytics", "bi", "llm"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
 dependencies = [
     "mcp>=1.0.0",
     "requests>=2.25.0",
     "pydantic>=2.0.0",
+    "pyyaml>=6.0.0",
+    "pyjwt>=2.0.0",
+    "pyhumps>=3.8.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/poddubnyoleg/lightdash_mcp"
-Repository = "https://github.com/poddubnyoleg/lightdash_mcp"
-Issues = "https://github.com/poddubnyoleg/lightdash_mcp/issues"
+Homepage = "https://github.com/zbmain/lightdash_mcp"
+Repository = "https://github.com/zbmain/lightdash_mcp"
+Issues = "https://github.com/zbmain/lightdash_mcp/issues"
+Changelog = "https://github.com/zbmain/lightdash_mcp/releases"
 
 [project.optional-dependencies]
 iap = ["google-auth>=2.0.0"]
+http = ["starlette>=0.27.0", "uvicorn>=0.20.0", "anyio>=3.0.0"]
+dev = ["pytest>=7.0.0", "pytest-mock>=3.0.0", "ruff>=0.1.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+  "E",     # pycodestyle errors
+  "W",     # pycodestyle warnings
+  "F",     # Pyflakes
+  "I",     # isort
+  "B",     # flake8-bugbear
+  "C4",    # flake8-comprehensions
+  "UP",    # pyupgrade
+]
+ignore = [
+  "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
 
 [project.scripts]
-lightdash-mcp = "lightdash_mcp.server:run"
+lightdash-mcp = "lightdash_mcp.__main__:main"

@@ -21,7 +21,7 @@ You can create an empty dashboard (just name and description) or a fully configu
 - `h`: Height in grid units
 - `w`: Width in grid units (max 12)
 
-**When to use:** 
+**When to use:**
 - To create a new empty dashboard that you'll populate later
 - To create a fully configured dashboard from a template or copy
 - Use duplicate-dashboard if you want to copy an existing dashboard
@@ -31,24 +31,25 @@ You can create an empty dashboard (just name and description) or a fully configu
         "properties": {
             "name": ToolParameter(
                 type="string",
-                description="Name of the dashboard (must be unique within the project)"
+                description="Name of the dashboard (must be unique within the project)",
             ),
             "description": ToolParameter(
                 type="string",
-                description="Optional: Description explaining the purpose of this dashboard"
+                description="Optional: Description explaining the purpose of this dashboard",
             ),
             "tiles": ToolParameter(
                 type="string",
-                description="Optional: JSON string array of tiles to add to the dashboard. Each tile needs type, properties with x/y/h/w positioning. Example: [{\"uuid\": \"uuid1\", \"type\": \"markdown\", \"properties\": {\"title\": \"Welcome\", \"content\": \"# Hello\"}, \"x\": 0, \"y\": 0, \"h\": 4, \"w\": 12}]"
+                description='Optional: JSON string array of tiles to add to the dashboard. Each tile needs type, properties with x/y/h/w positioning. Example: [{"uuid": "uuid1", "type": "markdown", "properties": {"title": "Welcome", "content": "# Hello"}, "x": 0, "y": 0, "h": 4, "w": 12}]',
             ),
             "tabs": ToolParameter(
                 type="string",
-                description="Optional: JSON string array of tabs for organizing tiles. Example: [{\"uuid\": \"tab-uuid\", \"name\": \"Overview\", \"order\": 0}]"
-            )
+                description='Optional: JSON string array of tabs for organizing tiles. Example: [{"uuid": "tab-uuid", "name": "Overview", "order": 0}]',
+            ),
         },
-        "required": ["name"]
-    }
+        "required": ["name"],
+    },
 )
+
 
 def run(name: str, description: str = "", tiles: str = "[]", tabs: str = "[]") -> str:
     """Run the create dashboard tool"""
@@ -62,12 +63,14 @@ def run(name: str, description: str = "", tiles: str = "[]", tabs: str = "[]") -
         "name": name,
         "description": description,
         "tiles": tiles_data,
-        "tabs": tabs_data
+        "tabs": tabs_data,
     }
-    
+
     project_uuid = get_project_uuid()
-    response = lightdash_client.post(f"/api/v1/projects/{project_uuid}/dashboards", data=dashboard_payload)
-    
+    response = lightdash_client.post(
+        f"/api/v1/projects/{project_uuid}/dashboards", data=dashboard_payload
+    )
+
     dashboard_uuid = response.get("results", {}).get("uuid", "")
-    
+
     return f"Successfully created dashboard '{name}' with UUID: {dashboard_uuid}. Dashboard has {len(tiles_data)} tiles and {len(tabs_data)} tabs."

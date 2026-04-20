@@ -14,7 +14,7 @@ This tool allows partial updates - you only need to provide the fields you want 
 
 **Updatable fields:**
 - `name`: Chart name
-- `description`: Chart description  
+- `description`: Chart description
 - `metric_query`: JSON string with metricQuery updates (dimensions, metrics, filters, sorts, etc.)
 - `chart_config`: JSON string with chartConfig updates (visualization settings)
 - `pivot_config`: JSON string with pivotConfig updates
@@ -47,32 +47,29 @@ metric_query: {"sorts": [{"fieldId": "table_column_name", "descending": false}]}
     inputSchema={
         "properties": {
             "chart_identifier": ToolParameter(
-                type="string",
-                description="Chart name (exact match) or UUID to update"
+                type="string", description="Chart name (exact match) or UUID to update"
             ),
             "name": ToolParameter(
-                type="string",
-                description="Optional: New name for the chart"
+                type="string", description="Optional: New name for the chart"
             ),
             "description": ToolParameter(
-                type="string",
-                description="Optional: New description for the chart"
+                type="string", description="Optional: New description for the chart"
             ),
             "metric_query": ToolParameter(
                 type="string",
-                description="Optional: JSON string with metricQuery fields to update (e.g., sorts, filters, dimensions, metrics)"
+                description="Optional: JSON string with metricQuery fields to update (e.g., sorts, filters, dimensions, metrics)",
             ),
             "chart_config": ToolParameter(
                 type="string",
-                description="Optional: JSON string with chartConfig fields to update"
+                description="Optional: JSON string with chartConfig fields to update",
             ),
             "pivot_config": ToolParameter(
                 type="string",
-                description="Optional: JSON string with pivotConfig to update. Use null to remove pivot."
-            )
+                description="Optional: JSON string with pivotConfig to update. Use null to remove pivot.",
+            ),
         },
-        "required": ["chart_identifier"]
-    }
+        "required": ["chart_identifier"],
+    },
 )
 
 
@@ -96,13 +93,13 @@ def run(
     description: str = "",
     metric_query: str = "",
     chart_config: str = "",
-    pivot_config: str = ""
+    pivot_config: str = "",
 ) -> str:
     """Run the update chart tool"""
-    
+
     # Find the chart
     charts = list_charts()
-    
+
     chart_uuid = None
     chart_name = ""
     for chart in charts:
@@ -110,20 +107,22 @@ def run(
             chart_uuid = chart_identifier
             chart_name = chart.get("name", "")
             break
-    
+
     if not chart_uuid:
         for chart in charts:
             if chart.get("name", "").lower() == chart_identifier.lower():
                 chart_uuid = chart.get("uuid")
                 chart_name = chart.get("name", "")
                 break
-    
+
     if not chart_uuid:
-        raise ValueError(f"Chart '{chart_identifier}' not found. Use list-charts to see available charts.")
-    
+        raise ValueError(
+            f"Chart '{chart_identifier}' not found. Use list-charts to see available charts."
+        )
+
     # Get current chart config for reference and as base for updates
     current_chart = get_chart_details(chart_uuid)
-    
+
     # Build version payload - start with current values
     base_metric_query = current_chart.get("metricQuery", {}).copy()
     # Remove fields that shouldn't be in the update
@@ -131,39 +130,41 @@ def run(
     # Remove uuid from additionalMetrics as it's auto-generated
     for am in base_metric_query.get("additionalMetrics", []):
         am.pop("uuid", None)
-    
+
     version_data: dict[str, Any] = {
         "tableName": current_chart.get("tableName"),
         "metricQuery": base_metric_query,
         "chartConfig": current_chart.get("chartConfig", {}),
         "tableConfig": current_chart.get("tableConfig", {}),
     }
-    
+
     # Add optional fields if they exist in current chart
     if current_chart.get("pivotConfig"):
         version_data["pivotConfig"] = current_chart.get("pivotConfig")
-    
+
     updated_fields = []
-    
+
     # Apply updates
     if name:
         version_data["name"] = name
         updated_fields.append(f"name: '{name}'")
-    
+
     if description:
         version_data["description"] = description
         updated_fields.append("description")
-    
+
     if metric_query:
         try:
             metric_query_updates = json.loads(metric_query)
             # Merge with already-cleaned base_metric_query
             merged_metric_query = deep_merge(base_metric_query, metric_query_updates)
             version_data["metricQuery"] = merged_metric_query
-            updated_fields.append(f"metricQuery ({', '.join(metric_query_updates.keys())})")
+            updated_fields.append(
+                f"metricQuery ({', '.join(metric_query_updates.keys())})"
+            )
         except json.JSONDecodeError as e:
             return f"Error parsing metric_query JSON: {str(e)}"
-    
+
     if chart_config:
         try:
             chart_config_updates = json.loads(chart_config)
@@ -174,7 +175,7 @@ def run(
             updated_fields.append("chartConfig")
         except json.JSONDecodeError as e:
             return f"Error parsing chart_config JSON: {str(e)}"
-    
+
     if pivot_config:
         try:
             if pivot_config.lower() == "null":
@@ -186,15 +187,15 @@ def run(
                 updated_fields.append("pivotConfig")
         except json.JSONDecodeError as e:
             return f"Error parsing pivot_config JSON: {str(e)}"
-    
+
     if not updated_fields:
         return "No updates provided. Specify at least one field to update (name, description, metric_query, chart_config, or pivot_config)."
-    
+
     # Create new version using POST endpoint
     try:
-        result = lightdash_client.post(f"/api/v1/saved/{chart_uuid}/version", data=version_data)
-        
+        lightdash_client.post(f"/api/v1/saved/{chart_uuid}/version", data=version_data)
+
         return f"✅ Successfully updated chart '{chart_name}' (UUID: {chart_uuid})\n\nUpdated fields: {', '.join(updated_fields)}"
-    
+
     except Exception as e:
         return f"❌ Failed to update chart '{chart_name}':\n\n{str(e)}"

@@ -16,7 +16,7 @@ Returns the raw dashboard configuration as code, including:
 - Layout information
 - Chart references
 
-**When to use:** 
+**When to use:**
 - To export a dashboard for version control
 - To understand the complete structure of a complex dashboard
 - Before programmatically duplicating a dashboard
@@ -34,25 +34,26 @@ Returns the raw dashboard configuration as code, including:
         "properties": {
             "dashboard_name": ToolParameter(
                 type="string",
-                description="Name of the dashboard (supports partial matching)"
+                description="Name of the dashboard (supports partial matching)",
             )
         },
-        "required": ["dashboard_name"]
-    }
+        "required": ["dashboard_name"],
+    },
 )
+
 
 def run(dashboard_name: str) -> dict[str, Any]:
     """Run the get dashboard code tool"""
     project_uuid = get_project_uuid()
     dashboards = list_dashboards(project_uuid)
-    
+
     dashboard_uuid = None
     for dash in dashboards:
         if dash.get("name", "").lower() == dashboard_name.lower():
             dashboard_uuid = dash.get("uuid")
             break
-            
+
     if not dashboard_uuid:
         raise ValueError(f"Dashboard '{dashboard_name}' not found")
-        
+
     return get_dashboard(dashboard_uuid)

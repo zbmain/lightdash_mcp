@@ -11,7 +11,7 @@ Spaces help organize content by:
 - Product area (e.g., "User Growth", "Revenue")
 - Development stage (e.g., "Production Dashboards", "Development")
 
-**When to use:** 
+**When to use:**
 - Before creating charts that belong to a new category
 - To organize existing content into logical groups
 - To set up restricted areas for sensitive data (use is_private=true)
@@ -24,26 +24,26 @@ Spaces help organize content by:
         "properties": {
             "name": ToolParameter(
                 type="string",
-                description="Name of the space. Should be descriptive and indicate the type of content it will contain."
+                description="Name of the space. Should be descriptive and indicate the type of content it will contain.",
             ),
             "is_private": ToolParameter(
                 type="boolean",
-                description="Whether the space is private (restricted access). Default: false (public space visible to all users)"
-            )
+                description="Whether the space is private (restricted access). Default: false (public space visible to all users)",
+            ),
         },
-        "required": ["name"]
-    }
+        "required": ["name"],
+    },
 )
+
 
 def run(name: str, is_private: bool = False) -> str:
     """Run the create space tool"""
-    space_data = {
-        "name": name,
-        "isPrivate": is_private
-    }
-    
+    space_data = {"name": name, "isPrivate": is_private}
+
     project_uuid = get_project_uuid()
-    response = lightdash_client.post(f"/api/v1/projects/{project_uuid}/spaces", data=space_data)
+    response = lightdash_client.post(
+        f"/api/v1/projects/{project_uuid}/spaces", data=space_data
+    )
     new_space_uuid = response.get("results", {}).get("uuid", "")
-    
+
     return f"Successfully created space '{name}' with UUID: {new_space_uuid}"

@@ -22,7 +22,7 @@ Filters use the same structure as chart filters with:
 - Values or value ranges
 - Time-based filters (inThePast, inTheNext, etc.)
 
-**When to use:** 
+**When to use:**
 - To add global date range selectors
 - To create region/category filters that apply to all charts
 - To update filter options or defaults
@@ -35,16 +35,17 @@ Filters use the same structure as chart filters with:
         "properties": {
             "dashboard_name": ToolParameter(
                 type="string",
-                description="Name of the dashboard (supports partial matching)"
+                description="Name of the dashboard (supports partial matching)",
             ),
             "filters": ToolParameter(
                 type="string",
-                description="JSON string of filter configuration. Use same structure as chart filters. Example: {\"dimensions\": {\"id\": \"root\", \"and\": [{\"id\": \"filter1\", \"target\": {\"fieldId\": \"table_field\"}, \"operator\": \"equals\", \"values\": [\"value\"]}]}}"
-            )
+                description='JSON string of filter configuration. Use same structure as chart filters. Example: {"dimensions": {"id": "root", "and": [{"id": "filter1", "target": {"fieldId": "table_field"}, "operator": "equals", "values": ["value"]}]}}',
+            ),
         },
-        "required": ["dashboard_name", "filters"]
-    }
+        "required": ["dashboard_name", "filters"],
+    },
 )
+
 
 def run(dashboard_name: str, filters: str) -> str:
     """Run the update dashboard filters tool"""
@@ -55,25 +56,25 @@ def run(dashboard_name: str, filters: str) -> str:
 
     project_uuid = get_project_uuid()
     dashboards = list_dashboards(project_uuid)
-    
+
     dashboard_uuid = None
     for dash in dashboards:
         if dash.get("name", "").lower() == dashboard_name.lower():
             dashboard_uuid = dash.get("uuid")
             break
-            
+
     if not dashboard_uuid:
         raise ValueError(f"Dashboard '{dashboard_name}' not found")
-        
+
     dashboard = get_dashboard(dashboard_uuid)
-    
+
     update_payload = {
         "name": dashboard.get("name"),
         "tiles": dashboard.get("tiles", []),
         "filters": filters_data,
-        "tabs": dashboard.get("tabs", [])
+        "tabs": dashboard.get("tabs", []),
     }
-    
+
     lightdash_client.patch(f"/api/v1/dashboards/{dashboard_uuid}", data=update_payload)
-    
+
     return f"Successfully updated filters on dashboard '{dashboard_name}'"

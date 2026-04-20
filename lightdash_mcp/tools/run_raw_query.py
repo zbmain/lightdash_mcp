@@ -1,5 +1,5 @@
-from typing import Any, Dict, Optional, Union
 import json
+from typing import Any
 
 from .. import lightdash_client
 from .base_tool import ToolDefinition, ToolParameter
@@ -81,66 +81,73 @@ metric_query:
         "properties": {
             "explore_name": ToolParameter(
                 type="string",
-                description="Name of the explore (table) to query (e.g., 'orders', 'customers')"
+                description="Name of the explore (table) to query (e.g., 'orders', 'customers')",
             ),
             "metric_query": ToolParameter(
                 type="string",
-                description="JSON string of the metric query configuration. Must include 'dimensions', 'metrics', etc. See description for example."
+                description="JSON string of the metric query configuration. Must include 'dimensions', 'metrics', etc. See description for example.",
             ),
             "limit": ToolParameter(
                 type="number",
-                description="Optional: Limit number of rows returned. Default is 500."
-            )
+                description="Optional: Limit number of rows returned. Default is 500.",
+            ),
         },
-        "required": ["explore_name", "metric_query"]
-    }
+        "required": ["explore_name", "metric_query"],
+    },
 )
 
-def run(explore_name: str, metric_query: Union[str, Dict[str, Any]], limit: Optional[int] = 500) -> str:
+
+def run(
+    explore_name: str,
+    metric_query: str | dict[str, Any],
+    limit: int | None = 500,
+) -> str:
     """Run the run raw query tool"""
     project_uuid = get_project_uuid()
-    
+
     # Parse metric_query if it's a string
     if isinstance(metric_query, str):
         try:
             query_config = json.loads(metric_query)
         except json.JSONDecodeError:
-            raise ValueError("metric_query must be a valid JSON string")
+            raise ValueError("metric_query must be a valid JSON string") from None
     else:
         query_config = metric_query
 
     # Ensure limit is set
     if limit:
-        query_config['limit'] = limit
+        query_config["limit"] = limit
 
     # Ensure required fields are present to avoid 422 errors
     # The API requires 'exploreName', 'sorts', and 'tableCalculations' even if empty
-    query_config['exploreName'] = explore_name
-    if 'sorts' not in query_config:
-        query_config['sorts'] = []
-    if 'tableCalculations' not in query_config:
-        query_config['tableCalculations'] = []
-    if 'dimensions' not in query_config:
-        query_config['dimensions'] = []
-    if 'metrics' not in query_config:
-        query_config['metrics'] = []
+    query_config["exploreName"] = explore_name
+    if "sorts" not in query_config:
+        query_config["sorts"] = []
+    if "tableCalculations" not in query_config:
+        query_config["tableCalculations"] = []
+    if "dimensions" not in query_config:
+        query_config["dimensions"] = []
+    if "metrics" not in query_config:
+        query_config["metrics"] = []
 
     url = f"/api/v1/projects/{project_uuid}/explores/{explore_name}/runQuery"
-    
+
     try:
         response = lightdash_client.post(url, data=query_config)
     except Exception as e:
         error_msg = str(e)
-        if "No function has been implemented to render SQL" in error_msg and "date" in error_msg:
-            raise Exception(f"{error_msg}\n\n💡 TIP: The 'inTheYear' or similar complex date operators may not be supported for this field type. Try using explicit date range filters instead (greaterThanOrEqual and lessThanOrEqual).") from e
+        if (
+            "No function has been implemented to render SQL" in error_msg
+            and "date" in error_msg
+        ):
+            raise Exception(
+                f"{error_msg}\n\n💡 TIP: The 'inTheYear' or similar complex date operators may not be supported for this field type. Try using explicit date range filters instead (greaterThanOrEqual and lessThanOrEqual)."
+            ) from e
         raise e
 
     results = response.get("results", {})
-    
+
     flattened_rows = flatten_rows(results.get("rows", []))
-    metadata = {
-        "row_count": len(flattened_rows),
-        "fields": results.get("fields", {})
-    }
-    
+    metadata = {"row_count": len(flattened_rows), "fields": results.get("fields", {})}
+
     return format_as_csv(flattened_rows, metadata)

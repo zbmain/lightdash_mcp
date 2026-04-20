@@ -39,7 +39,7 @@ TOOL_DEFINITION = ToolDefinition(
 - For 3 tiles per row: use `w: 12` each
 - For full width: use `w: 36`
 
-**When to use:** 
+**When to use:**
 - To add charts to a dashboard
 - To add markdown documentation/headers
 - To embed Loom videos for context
@@ -49,26 +49,29 @@ TOOL_DEFINITION = ToolDefinition(
         "properties": {
             "dashboard_name": ToolParameter(
                 type="string",
-                description="Name of the dashboard (supports partial matching)"
+                description="Name of the dashboard (supports partial matching)",
             ),
             "tile_type": ToolParameter(
                 type="string",
-                description="Type of tile: 'saved_chart' (for charts), 'markdown' (for text), or 'loom' (for videos)"
+                description="Type of tile: 'saved_chart' (for charts), 'markdown' (for text), or 'loom' (for videos)",
             ),
             "properties": ToolParameter(
                 type="string",
-                description="JSON object string with tile properties. MUST include x, y, h, w for positioning. Example for chart: {\"x\": 0, \"y\": 0, \"h\": 6, \"w\": 18, \"savedChartUuid\": \"uuid-here\"}"
+                description='JSON object string with tile properties. MUST include x, y, h, w for positioning. Example for chart: {"x": 0, "y": 0, "h": 6, "w": 18, "savedChartUuid": "uuid-here"}',
             ),
             "tab_uuid": ToolParameter(
                 type="string",
-                description="Optional: UUID of the tab to add the tile to. Leave empty to use the first tab (or no tab if dashboard has no tabs)."
-            )
+                description="Optional: UUID of the tab to add the tile to. Leave empty to use the first tab (or no tab if dashboard has no tabs).",
+            ),
         },
-        "required": ["dashboard_name", "tile_type", "properties"]
-    }
+        "required": ["dashboard_name", "tile_type", "properties"],
+    },
 )
 
-def run(dashboard_name: str, tile_type: str, properties: str, tab_uuid: str = None) -> str:
+
+def run(
+    dashboard_name: str, tile_type: str, properties: str, tab_uuid: str = None
+) -> str:
     """Run the create dashboard tile tool"""
     try:
         properties_data = json.loads(properties)
@@ -78,34 +81,36 @@ def run(dashboard_name: str, tile_type: str, properties: str, tab_uuid: str = No
     required_props = ["x", "y", "h", "w"]
     missing_props = [p for p in required_props if p not in properties_data]
     if missing_props:
-        raise ValueError(f"Missing required properties: {missing_props}. All tiles need x, y, h, w properties.")
+        raise ValueError(
+            f"Missing required properties: {missing_props}. All tiles need x, y, h, w properties."
+        )
 
     project_uuid = get_project_uuid()
     dashboards = list_dashboards(project_uuid)
-    
+
     dashboard_uuid = None
     for dash in dashboards:
         if dash.get("name", "").lower() == dashboard_name.lower():
             dashboard_uuid = dash.get("uuid")
             break
-    
+
     if not dashboard_uuid:
         for dash in dashboards:
             if dashboard_name.lower() in dash.get("name", "").lower():
                 dashboard_uuid = dash.get("uuid")
                 break
-    
+
     if not dashboard_uuid:
         raise ValueError(f"Dashboard '{dashboard_name}' not found")
 
     dashboard = get_dashboard(dashboard_uuid)
     tiles = dashboard.get("tiles", [])
-    
+
     x = properties_data.pop("x")
     y = properties_data.pop("y")
     h = properties_data.pop("h")
     w = properties_data.pop("w")
-    
+
     new_tile = {
         "uuid": str(uuid.uuid4()),
         "x": x,
@@ -114,23 +119,23 @@ def run(dashboard_name: str, tile_type: str, properties: str, tab_uuid: str = No
         "w": w,
         "type": tile_type,
         "properties": properties_data,
-        "tabUuid": None
+        "tabUuid": None,
     }
-    
+
     if tab_uuid:
         new_tile["tabUuid"] = tab_uuid
     elif dashboard.get("tabs"):
         new_tile["tabUuid"] = dashboard["tabs"][0].get("uuid")
-        
+
     tiles.append(new_tile)
-    
+
     update_payload = {
         "name": dashboard.get("name"),
         "tiles": tiles,
         "filters": dashboard.get("filters", {}),
-        "tabs": dashboard.get("tabs", [])
+        "tabs": dashboard.get("tabs", []),
     }
-    
+
     lightdash_client.patch(f"/api/v1/dashboards/{dashboard_uuid}", data=update_payload)
-    
+
     return f"Successfully created new tile of type '{tile_type}' on dashboard '{dashboard_name}' with UUID: {new_tile['uuid']}"

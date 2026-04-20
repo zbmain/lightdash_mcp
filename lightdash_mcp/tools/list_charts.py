@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from .. import lightdash_client
 from .base_tool import ToolDefinition, ToolParameter
@@ -14,7 +14,7 @@ Returns chart information including:
 - Description
 - Last updated timestamp
 
-**When to use:** 
+**When to use:**
 - To discover available charts in the project
 - To find a chart UUID for adding to dashboards or querying
 - To get an overview of what visualizations exist
@@ -25,29 +25,32 @@ Returns chart information including:
         "properties": {
             "search_term": ToolParameter(
                 type="string",
-                description="Optional: Filter charts by name (case-insensitive partial match). Example: 'revenue' will match 'Monthly Revenue Chart'"
+                description="Optional: Filter charts by name (case-insensitive partial match). Example: 'revenue' will match 'Monthly Revenue Chart'",
             )
         }
-    }
+    },
 )
 
-def run(search_term: Optional[str] = None) -> list[dict[str, Any]]:
+
+def run(search_term: str | None = None) -> list[dict[str, Any]]:
     """Run the list charts tool"""
     project_uuid = get_project_uuid()
     response = lightdash_client.get(f"/api/v1/projects/{project_uuid}/charts")
     charts = response.get("results", [])
-    
+
     if search_term:
         charts = [c for c in charts if search_term.lower() in c.get("name", "").lower()]
-            
+
     result = []
     for chart in charts:
-        result.append({
-            "uuid": chart.get("uuid"),
-            "name": chart.get("name"),
-            "space": chart.get("spaceName", ""),
-            "description": chart.get("description", ""),
-            "updatedAt": chart.get("updatedAt", "")
-        })
-            
+        result.append(
+            {
+                "uuid": chart.get("uuid"),
+                "name": chart.get("name"),
+                "space": chart.get("spaceName", ""),
+                "description": chart.get("description", ""),
+                "updatedAt": chart.get("updatedAt", ""),
+            }
+        )
+
     return result

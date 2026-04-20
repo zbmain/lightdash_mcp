@@ -1,7 +1,7 @@
 from .. import lightdash_client
 from .base_tool import ToolDefinition, ToolParameter
-from .list_spaces import run as list_spaces
 from .get_project import get_project_uuid
+from .list_spaces import run as list_spaces
 
 TOOL_DEFINITION = ToolDefinition(
     name="delete-space",
@@ -12,7 +12,7 @@ TOOL_DEFINITION = ToolDefinition(
 - Must move or delete all content from the space first
 - This is a permanent operation
 
-**When to use:** 
+**When to use:**
 - To remove empty, unused spaces
 - To clean up organizational structure
 - After moving all content to other spaces
@@ -27,29 +27,33 @@ TOOL_DEFINITION = ToolDefinition(
         "properties": {
             "space_identifier": ToolParameter(
                 type="string",
-                description="Space name (exact match) or UUID to delete. Space must be empty (no charts or dashboards)."
+                description="Space name (exact match) or UUID to delete. Space must be empty (no charts or dashboards).",
             )
         },
-        "required": ["space_identifier"]
-    }
+        "required": ["space_identifier"],
+    },
 )
+
 
 def run(space_identifier: str) -> str:
     """Run the delete space tool"""
     spaces = list_spaces()
-    
+
     space_uuid = None
     space_name = ""
     for space in spaces:
-        if space.get("uuid") == space_identifier or space.get("name", "").lower() == space_identifier.lower():
+        if (
+            space.get("uuid") == space_identifier
+            or space.get("name", "").lower() == space_identifier.lower()
+        ):
             space_uuid = space.get("uuid")
             space_name = space.get("name")
             break
-            
+
     if not space_uuid:
         raise ValueError(f"Space '{space_identifier}' not found")
-    
+
     project_uuid = get_project_uuid()
     lightdash_client.delete(f"/api/v1/projects/{project_uuid}/spaces/{space_uuid}")
-    
+
     return f"Successfully deleted space '{space_name}'"

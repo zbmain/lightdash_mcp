@@ -28,7 +28,7 @@ Lightdash uses a **36-column grid** horizontally:
 - For 3 tiles per row: `w: 12` each (x: 0, x: 12, x: 24)
 - For full-width tile: `w: 36`
 
-**When to use:** 
+**When to use:**
 - To reposition or resize tiles on a dashboard
 - To update multiple tile properties at once
 - To change content of markdown tiles
@@ -42,20 +42,21 @@ Lightdash uses a **36-column grid** horizontally:
         "properties": {
             "dashboard_name": ToolParameter(
                 type="string",
-                description="Name of the dashboard (supports partial matching)"
+                description="Name of the dashboard (supports partial matching)",
             ),
             "tile_identifier": ToolParameter(
                 type="string",
-                description="Current title of the tile or partial match to identify which tile to update"
+                description="Current title of the tile or partial match to identify which tile to update",
             ),
             "properties_update": ToolParameter(
                 type="string",
-                description="JSON object string of properties to update. Position properties (x, y, h, w) go at tile level. Other properties go in properties object. Example: {\"x\": 0, \"y\": 5, \"title\": \"New Title\", \"w\": 12}"
-            )
+                description='JSON object string of properties to update. Position properties (x, y, h, w) go at tile level. Other properties go in properties object. Example: {"x": 0, "y": 5, "title": "New Title", "w": 12}',
+            ),
         },
-        "required": ["dashboard_name", "tile_identifier", "properties_update"]
-    }
+        "required": ["dashboard_name", "tile_identifier", "properties_update"],
+    },
 )
+
 
 def run(dashboard_name: str, tile_identifier: str, properties_update: str) -> str:
     """Run the update dashboard tile tool"""
@@ -66,34 +67,34 @@ def run(dashboard_name: str, tile_identifier: str, properties_update: str) -> st
 
     project_uuid = get_project_uuid()
     dashboards = list_dashboards(project_uuid)
-    
+
     dashboard_uuid = None
     for dash in dashboards:
         if dash.get("name", "").lower() == dashboard_name.lower():
             dashboard_uuid = dash.get("uuid")
             break
-    
+
     if not dashboard_uuid:
         for dash in dashboards:
             if dashboard_name.lower() in dash.get("name", "").lower():
                 dashboard_uuid = dash.get("uuid")
                 break
-    
+
     if not dashboard_uuid:
         raise ValueError(f"Dashboard '{dashboard_name}' not found")
 
     dashboard = get_dashboard(dashboard_uuid)
     tiles = dashboard.get("tiles", [])
-    
+
     tile_found = False
-    
+
     for i, tile in enumerate(tiles):
         props = tile.get("properties", {})
         title = props.get("title", "") or props.get("chartName", "")
-        
+
         if tile_identifier.lower() in title.lower():
             tile_found = True
-            
+
             position_props = {"x", "y", "h", "w"}
             for key, value in properties_update_data.items():
                 if key in position_props:
@@ -101,17 +102,19 @@ def run(dashboard_name: str, tile_identifier: str, properties_update: str) -> st
                 else:
                     tiles[i]["properties"][key] = value
             break
-            
+
     if not tile_found:
-        raise ValueError(f"Tile matching '{tile_identifier}' not found on dashboard '{dashboard_name}'")
+        raise ValueError(
+            f"Tile matching '{tile_identifier}' not found on dashboard '{dashboard_name}'"
+        )
 
     update_payload = {
         "name": dashboard.get("name"),
         "tiles": tiles,
         "filters": dashboard.get("filters", {}),
-        "tabs": dashboard.get("tabs", [])
+        "tabs": dashboard.get("tabs", []),
     }
-    
+
     lightdash_client.patch(f"/api/v1/dashboards/{dashboard_uuid}", data=update_payload)
-    
+
     return f"Successfully updated tile '{tile_identifier}' on dashboard '{dashboard_name}' with properties: {json.dumps(properties_update_data)}"
