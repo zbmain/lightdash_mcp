@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "lightdash-docs": {
+      "type": "http",
+      "url": "https://docs.lightdash.com/mcp"
+    }
+  }
+}
