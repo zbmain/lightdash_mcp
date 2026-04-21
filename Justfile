@@ -109,9 +109,9 @@ ci-dry:
 # 运行 self-check workflow (repo-health + pre-commit + dependency-audit)
 self-check:
     @which act > /dev/null 2>&1 || { echo "❌ act not installed. Run: brew install act"; exit 1; }
-    act -W .github/workflows/self-check.yml --pull=false -j "Repository Health" && \
-    act -W .github/workflows/self-check.yml --pull=false -j Pre-Commit && \
-    act -W .github/workflows/self-check.yml --pull=false -j "Dependency Audit"
+    act -W .github/workflows/self-check.yml --pull=false -j repo-health && \
+    act -W .github/workflows/self-check.yml --pull=false -j pre-commit && \
+    act -W .github/workflows/self-check.yml --pull=false -j dependency-audit
 
 # 运行所有 GitHub workflows (CI + self-check)
 github-actions: self-check ci

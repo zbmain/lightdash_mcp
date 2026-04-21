@@ -17,15 +17,16 @@ jobs:
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Install dependencies
-        run: ~/.local/bin/uv sync --dev
+        run: ~/.local/bin/uv sync
 
       - name: Run ruff check
-        run: ~/.local/bin/uvx ruff check .
+        run: |
+          echo "=== UV version ===" && ~/.local/bin/uv --version
+          echo "=== uvx ruff check ===" && ~/.local/bin/uvx ruff check lightdash_mcp/
 
       - name: Check ruff format
         run: |
-          ~/.local/bin/uvx ruff format --check .
-          # Fail if format differs — forces contributors to run `ruff format`
+          ~/.local/bin/uvx ruff format --check lightdash_mcp/
 
   test:
     name: Test
@@ -37,7 +38,7 @@ jobs:
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Install dependencies
-        run: ~/.local/bin/uv sync --dev
+        run: ~/.local/bin/uv sync --extra dev
 
       - name: Run tests
         run: ~/.local/bin/uv run pytest -v

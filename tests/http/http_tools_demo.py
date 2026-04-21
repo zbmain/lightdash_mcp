@@ -5,7 +5,7 @@ HTTP 模式下 MCP 只读工具测试。
     just run-http
 
 运行：
-    uv run python tests/http/test_http_tools.py
+    uv run python tests/http/http_tools_demo.py
 """
 from __future__ import annotations
 
