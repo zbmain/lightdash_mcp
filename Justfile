@@ -84,25 +84,34 @@ validate-registry:
 # 需要安装 act: https://github.com/nektos/act
 # macOS: brew install act
 # Linux: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | bash
+#
+# 注意: act 容器在某些网络环境下可能无法下载 uv/依赖（Docker 网络限制）。
+# 在 GitHub Actions 上运行完全正常。本地测试建议使用 `just check` / `just test`。
 
 # 检查 act 是否安装
 check-act:
     @which act > /dev/null 2>&1 && echo "✅ act installed" || echo "❌ act not found. Install: brew install act"
 
-# 运行 CI workflow (lint + test + build)
+# 运行 CI workflow (lint + test + build) — 串行运行避免并行网络竞争
 ci:
     @which act > /dev/null 2>&1 || { echo "❌ act not installed. Run: brew install act"; exit 1; }
-    act -W .github/workflows/ci.yml --pull=false
+    act -W .github/workflows/ci.yml --pull=false -j lint && \
+    act -W .github/workflows/ci.yml --pull=false -j test && \
+    act -W .github/workflows/ci.yml --pull=false -j build
 
 # 运行 CI workflow (dry-run, 不执行实际命令)
 ci-dry:
     @which act > /dev/null 2>&1 || { echo "❌ act not installed. Run: brew install act"; exit 1; }
-    act -W .github/workflows/ci.yml --pull=false --dry-run
+    act -W .github/workflows/ci.yml --pull=false -j lint --dry-run && \
+    act -W .github/workflows/ci.yml --pull=false -j test --dry-run && \
+    act -W .github/workflows/ci.yml --pull=false -j build --dry-run
 
 # 运行 self-check workflow (repo-health + pre-commit + dependency-audit)
 self-check:
     @which act > /dev/null 2>&1 || { echo "❌ act not installed. Run: brew install act"; exit 1; }
-    act -W .github/workflows/self-check.yml --pull=false
+    act -W .github/workflows/self-check.yml --pull=false -j "Repository Health" && \
+    act -W .github/workflows/self-check.yml --pull=false -j Pre-Commit && \
+    act -W .github/workflows/self-check.yml --pull=false -j "Dependency Audit"
 
 # 运行所有 GitHub workflows (CI + self-check)
 github-actions: self-check ci

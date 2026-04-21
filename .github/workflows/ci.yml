@@ -14,19 +14,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Install dependencies
-        run: uv sync --dev
+        run: ~/.local/bin/uv sync --dev
 
       - name: Run ruff check
-        run: uv run ruff check .
+        run: ~/.local/bin/uvx ruff check .
 
       - name: Check ruff format
         run: |
-          uv run ruff format --check .
+          ~/.local/bin/uvx ruff format --check .
           # Fail if format differs — forces contributors to run `ruff format`
 
   test:
@@ -36,15 +34,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Install dependencies
-        run: uv sync --dev
+        run: ~/.local/bin/uv sync --dev
 
       - name: Run tests
-        run: uv run pytest -v
+        run: ~/.local/bin/uv run pytest -v
 
   build:
     name: Build
@@ -53,18 +49,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Install dependencies
-        run: uv sync
+        run: ~/.local/bin/uv sync
 
       - name: Install hatchling
-        run: uv pip install hatchling
+        run: ~/.local/bin/uv pip install hatchling
 
       - name: Build package
-        run: uv run hatchling build
+        run: ~/.local/bin/uv run hatchling build
 
       - name: Verify build artifacts
         run: |
