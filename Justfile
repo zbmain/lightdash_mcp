@@ -79,3 +79,30 @@ list-tools:
 # 验证 YAML 配置
 validate-registry:
     uv run python -c "from lightdash_mcp.tools import validate_registry; validate_registry()"
+
+# ── GitHub Actions (本地运行) ───────────────────────────────────────────────
+# 需要安装 act: https://github.com/nektos/act
+# macOS: brew install act
+# Linux: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | bash
+
+# 检查 act 是否安装
+check-act:
+    @which act > /dev/null 2>&1 && echo "✅ act installed" || echo "❌ act not found. Install: brew install act"
+
+# 运行 CI workflow (lint + test + build)
+ci:
+    @which act > /dev/null 2>&1 || { echo "❌ act not installed. Run: brew install act"; exit 1; }
+    act -W .github/workflows/ci.yml --pull=false
+
+# 运行 CI workflow (dry-run, 不执行实际命令)
+ci-dry:
+    @which act > /dev/null 2>&1 || { echo "❌ act not installed. Run: brew install act"; exit 1; }
+    act -W .github/workflows/ci.yml --pull=false --dry-run
+
+# 运行 self-check workflow (repo-health + pre-commit + dependency-audit)
+self-check:
+    @which act > /dev/null 2>&1 || { echo "❌ act not installed. Run: brew install act"; exit 1; }
+    act -W .github/workflows/self-check.yml --pull=false
+
+# 运行所有 GitHub workflows (CI + self-check)
+github-actions: self-check ci
