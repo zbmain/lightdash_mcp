@@ -168,3 +168,9 @@ tools:
     description: Execute an ad-hoc metric query against any explore
     category: query
     enabled: true
+
+  # ---------- External API ----------
+  - name: question-annotation
+    description: Annotate a natural language question for CPV entities
+    category: external
+    enabled: true

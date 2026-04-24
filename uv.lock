@@ -426,6 +426,7 @@ name = "lightdash-mcp"
 version = "0.1.2"
 source = { editable = "." }
 dependencies = [
+    { name = "httpx" },
     { name = "mcp" },
     { name = "pydantic" },
     { name = "pyhumps" },
@@ -454,6 +455,7 @@ iap = [
 requires-dist = [
     { name = "anyio", marker = "extra == 'http'", specifier = ">=3.0.0" },
     { name = "google-auth", marker = "extra == 'iap'", specifier = ">=2.0.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "mcp", specifier = ">=1.0.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.0.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
