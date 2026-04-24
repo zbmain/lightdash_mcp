@@ -1,0 +1,20 @@
+# 不进入镜像的文件
+.git
+.github
+tests
+docs
+.claude
+*.md
+CLAUDE.md
+Justfile
+uv.lock
+dist
+build
+*.egg-info
+.pytest_cache
+.ruff_cache
+htmlcov
+.coverage
+*.log
+.env
+.env.*
