@@ -9,30 +9,30 @@ from typing import Any
 
 import httpx
 
-from .base_tool import ToolDefinition, ToolParameter
+from .base_tool import ToolDefinition
 
 BASE_URL = "https://ml-jsonrpc.banmahui.cn/cpvmatch"
 _API_VERSION = "v2"
 _TIMEOUT = 30.0
 
 TOOL_DEFINITION = ToolDefinition(
-    name="question-annotation",
-    description="Annotate a natural language question for CPV entities.",
+    name="run-question-annotation",
+    description="""Annotate a natural language question for CPV entities.""",
     inputSchema={
         "properties": {
-            "question": ToolParameter(
-                type="string",
-                description="Natural language question to annotate",
-            ),
-            "full_mode": ToolParameter(
-                type="boolean",
-                description="Enable full annotation mode (default True)",
-            ),
-            "attribute_categories": ToolParameter(
-                type="array",
-                items={"type": "string"},
-                description="Optional list of attribute categories, e.g. 饮料,食品",
-            ),
+            "question": {
+                "type": "string",
+                "description": "Natural language question to annotate",
+            },
+            "full_mode": {
+                "type": "boolean",
+                "description": "Enable full annotation mode (default True)",
+            },
+            "attribute_categories": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Optional list of attribute categories, e.g. 饮料,食品",
+            },
         },
         "required": ["question"],
     },
@@ -81,6 +81,6 @@ def _get_apikey() -> str:
     if not apikey:
         raise ValueError(
             "CPVMATCH_APIKEY environment variable not set. "
-            "Set it before calling question-annotation tool."
+            "Set it before calling run-question-annotation tool."
         )
     return apikey

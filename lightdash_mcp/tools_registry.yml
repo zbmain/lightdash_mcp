@@ -170,7 +170,7 @@ tools:
     enabled: true
 
   # ---------- External API ----------
-  - name: question-annotation
+  - name: run-question-annotation
     description: Annotate a natural language question for CPV entities
     category: external
     enabled: true
