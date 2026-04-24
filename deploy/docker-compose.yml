@@ -1,13 +1,11 @@
 services:
   lightdash-mcp:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
+    image: registry.cn-hangzhou.aliyuncs.com/winwin/tool:lightdash-mcp-20260424refs
     container_name: lightdash-mcp
     ports:
       - "${LIGHTDASH_MCP_HTTP_PORT:-8080}:8080"
     env_file:
-      - .env
+      - ../.env
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
