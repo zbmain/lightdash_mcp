@@ -56,17 +56,22 @@ run:
 run-http:
     uv run lightdash-mcp http
 
+# 清理构建产物
+clean:
+    rm -rf dist/ build/ *.egg-info/ .pytest_cache/ .ruff_cache/ .coverage htmlcov/
+
 # 仅构建包
-build:
+build: clean
     uv build
 
 # 发布到 PyPI
 publish:
     uv publish
 
-# 清理构建产物
-clean:
-    rm -rf dist/ build/ *.egg-info/ .pytest_cache/ .ruff_cache/ .coverage htmlcov/
+image:
+    #!/bin/bash
+    TAG=$(date +%Y%m%d)$(git rev-parse refs/remotes/origin/master^{commit} | cut -c 1-4)
+    docker buildx build --build-arg UV_INDEX=https://mirrors.aliyun.com/pypi/simple/ -f deploy/Dockerfile -t registry.cn-hangzhou.aliyuncs.com/winwin/tool:lightdash-mcp-$TAG .
 
 # 进入 uv 虚拟环境
 shell:
