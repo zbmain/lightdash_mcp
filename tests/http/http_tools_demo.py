@@ -2,7 +2,7 @@
 HTTP 模式下 MCP 只读工具测试。
 
 前置条件：启动 MCP HTTP 服务器
-    just run-http
+    LIGHTDASH_MCP_HTTP_APIKEY=xxx just run-http
 
 运行：
     uv run python tests/http/http_tools_demo.py
@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import os
 import sys
-
-import jwt
 
 
 def _load_env():
@@ -43,17 +41,17 @@ def main():
     from mcp.client.streamable_http import streamablehttp_client
     from mcp import ClientSession
 
-    auth_token = jwt.encode(
-        {"sub": "test", "exp": 9999999999}, HTTP_APIKEY, algorithm="HS256"
-    )
+    if not HTTP_APIKEY:
+        print("[ERROR] LIGHTDASH_MCP_HTTP_APIKEY not set")
+        sys.exit(1)
 
     print(f"Connecting to {MCP_ENDPOINT}...")
 
     async def run_tests():
         async with streamablehttp_client(
-                MCP_ENDPOINT,
-                headers={"Authorization": f"Bearer {auth_token}"},
-                timeout=60.0,
+            MCP_ENDPOINT,
+            headers={"apikey": HTTP_APIKEY},
+            timeout=60.0,
         ) as (read_stream, write_stream, _):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
@@ -66,7 +64,7 @@ def main():
                     ("list-charts", {}),
                     ("list-explores", {"database_name": "zhidou_bi"}),
                     ("get-project", {}),
-                    ("search-charts", {"search_term": "test"}),
+                    ("search-charts", {"search_term": "test"})
                 ]
 
                 passed = 0

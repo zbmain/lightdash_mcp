@@ -37,7 +37,7 @@ Returns distinct values for a given field, useful for:
             ),
             "limit": ToolParameter(
                 type="integer",
-                description="Optional max number of values to return. Default: 500.",
+                description="Optional max number of values to return. Default: 50.",
             ),
         },
         "required": ["table", "field_id"],
@@ -122,7 +122,7 @@ def run(
     table: str,
     field_id: str,
     search: str | None = None,
-    limit: int = 500,
+    limit: int = 50,
 ) -> dict[str, Any]:
     """Run the list table field values tool.
 
