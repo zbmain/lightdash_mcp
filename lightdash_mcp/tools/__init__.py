@@ -10,6 +10,7 @@ _REGISTRY_YAML_PATH = Path(__file__).parent.parent / "tools_registry.yml"
 # 从 YAML 中加载注册配置
 _enabled_tools: set[str] = set()
 _registry_config: dict = {}
+_registry_defaults: dict[str, dict] = {}  # tool_name -> {param: default_value}
 
 if _REGISTRY_YAML_PATH.exists():
     with open(_REGISTRY_YAML_PATH, encoding="utf-8") as f:
@@ -17,6 +18,10 @@ if _REGISTRY_YAML_PATH.exists():
     _enabled_tools = {
         t["name"] for t in _registry_config.get("tools", []) if t.get("enabled", False)
     }
+    # 从 tools[].defaults 提取默认值映射
+    for tool_entry in _registry_config.get("tools", []):
+        if "defaults" in tool_entry:
+            _registry_defaults[tool_entry["name"]] = tool_entry["defaults"]
 
 # 自动发现所有工具模块（使用 pkgutil，仅当工具在 registry.yml 中 enabled=true 时才注册）
 tool_registry: dict[str, object] = {}

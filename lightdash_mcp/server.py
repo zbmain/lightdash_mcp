@@ -6,9 +6,9 @@ Lightdash MCP Server
   - HTTP：        `lightdash-mcp http`
 
 HTTP 模式需要安装额外依赖：`pip install lightdash-mcp[http]`
-JWT 认证由 LIGHTDASH_MCP_HTTP_APIKEY 环境变量配置（必填）。
+固定明文 APIKEY 认证由 LIGHTDASH_MCP_HTTP_APIKEY 环境变量配置（必填）。
 HTTP 客户端通过请求头传入凭证覆盖服务端环境变量：
-  Authorization: Bearer <jwt>                        # JWT 认证（必填）
+  APIKEY: <LIGHTDASH_MCP_HTTP_APIKEY 的值>              # APIKEY 认证（必填）
   X-Lightdash-Url: https://xxx.lightdash.cloud      # 可选：覆盖 LIGHTDASH_URL
   X-Lightdash-Token: ldt_xxx                        # 可选：覆盖 LIGHTDASH_TOKEN
   X-Lightdash-Project-Uuid: xxx                    # 可选：覆盖 LIGHTDASH_PROJECT_UUID
@@ -27,12 +27,13 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
 from starlette.responses import JSONResponse
 from starlette.routing import Mount, Route
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from . import lightdash_client as _lc
-from .tools import tool_registry
+from .tools import _registry_defaults, tool_registry
 
 app = Server("lightdash")
 
@@ -64,7 +65,9 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
         tool_module = tool_registry[name]
-        result = tool_module.run(**arguments)
+        defaults = _registry_defaults.get(name, {})
+        merged = {**defaults, **(arguments or {})}
+        result = tool_module.run(**merged)
 
         if isinstance(result, (dict, list)):
             result_text = json.dumps(result, indent=2)
@@ -89,37 +92,29 @@ async def main_stdio() -> None:
 # ── HTTP 模式 ─────────────────────────────────────────────────────────────
 
 
-def _get_jwt_secret() -> str:
-    """获取 JWT 对称密钥，未设置则退出。"""
-    secret = os.getenv("LIGHTDASH_MCP_HTTP_APIKEY", "").strip()
-    if not secret:
+def _get_apikey() -> str:
+    """获取 APIKEY，未设置则退出。"""
+    apikey = os.getenv("LIGHTDASH_MCP_HTTP_APIKEY", "").strip()
+    if not apikey:
         sys.exit(
             "[HTTP] LIGHTDASH_MCP_HTTP_APIKEY environment variable is required for HTTP mode.\n"
             "Example: LIGHTDASH_MCP_HTTP_APIKEY=your-256-bit-secret lightdash-mcp http"
         )
-    return secret
+    return apikey
 
 
-def _verify_jwt(token: str) -> dict[str, Any]:
-    """验证 JWT 并返回 payload，失败则抛出 PermissionError。"""
-    import jwt  # 延迟导入，仅 HTTP 模式需要
-
-    try:
-        payload = jwt.decode(token, _get_jwt_secret(), algorithms=["HS256"])
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise PermissionError("JWT token has expired") from None
-    except jwt.InvalidTokenError as e:
-        raise PermissionError(f"Invalid JWT token: {e}") from e
+def _verify_apikey(token: str) -> None:
+    """验证 APIKEY，失败则抛出 PermissionError。"""
+    expected = _get_apikey()
+    if token != expected:
+        raise PermissionError("Invalid APIKEY")
 
 
-def _extract_bearer(scope: Scope) -> str | None:
-    """从 ASGI scope headers 中提取 Bearer token。"""
+def _extract_apikey(scope: Scope) -> str | None:
+    """从 ASGI scope headers 中提取 APIKEY。"""
     for key, value in scope.get("headers", []):
-        if key == b"authorization":
-            val = value.decode()
-            if val.startswith("Bearer "):
-                return val[7:]
+        if key == b"apikey":
+            return value.decode().strip()
     return None
 
 
@@ -169,12 +164,35 @@ def _get_mcp_asgi_app() -> Any:
     return _http_asgi_app
 
 
+# ── Trailing Slash 消除中间件 ────────────────────────────────────────────────
+
+
+class StripTrailingSlashMiddleware:
+    """
+    消除 307 重定向：将 /mcp 重写为 /mcp/，避免 Starlette Mount strict_slashes 触发重定向。
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http":
+            path = scope.get("path", "")
+            if path and not path.endswith("/") and not path.startswith("/health"):
+                # 重写 path，去掉尾部斜杠（用于 /mcp → /mcp/）
+                new_scope = dict(scope)
+                new_scope["path"] = path.rstrip("/") + "/"
+                await self.app(new_scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
+
 # ── JWT 认证 + 凭证注入中间件 ─────────────────────────────────────────────
 
 
-class JWTAuthMiddleware:
+class APIKeyAuthMiddleware:
     """
-    ASGI 中间件：对 /mcp/* 和 /messages/* 进行 JWT 认证，
+    ASGI 中间件：对 /mcp/* 和 /messages/* 进行 APIKEY 认证，
     验证通过后注入 Lightdash 凭证上下文。
     """
 
@@ -188,19 +206,19 @@ class JWTAuthMiddleware:
 
         path = scope.get("path", "")
 
-        # 所有 MCP 端点需要 JWT 认证
+        # 所有 MCP 端点需要 APIKEY 认证
         if path.startswith("/mcp") or path.startswith("/messages"):
-            token = _extract_bearer(scope)
+            token = _extract_apikey(scope)
             if not token:
-                await self._error(send, 401, "Missing or invalid Authorization header")
+                await self._error(send, 401, "Missing or invalid APIKEY header")
                 return
             try:
-                _verify_jwt(token)
+                _verify_apikey(token)
             except PermissionError as e:
                 await self._error(send, 401, str(e))
                 return
 
-            # JWT 验证通过，注入凭证到 Lightdash 请求上下文
+            # APIKEY 验证通过，注入凭证到 Lightdash 请求上下文
             headers = _headers_to_str_dict(scope)
             _lc.set_request_context(headers)
             try:
@@ -273,13 +291,13 @@ def main_http() -> None:
 
     host = os.getenv("LIGHTDASH_MCP_HTTP_HOST", "0.0.0.0")
     port = int(os.getenv("LIGHTDASH_MCP_HTTP_PORT", "8080"))
-    secret = os.getenv("LIGHTDASH_MCP_HTTP_APIKEY", "")
+    apikey = os.getenv("LIGHTDASH_MCP_HTTP_APIKEY", "")
 
-    if secret:
-        print(f"[HTTP] JWT secret configured ({len(secret)} chars)", file=sys.stderr)
+    if apikey:
+        print(f"[HTTP] APIKEY configured ({len(apikey)} chars)", file=sys.stderr)
     else:
         print(
-            "[HTTP] WARNING: LIGHTDASH_MCP_HTTP_APIKEY not set - JWT auth will fail on /mcp",
+            "[HTTP] WARNING: LIGHTDASH_MCP_HTTP_APIKEY not set - APIKEY auth will fail on /mcp",
             file=sys.stderr,
         )
     print(f"Lightdash Host: {os.getenv('LIGHTDASH_URL')}\n", file=sys.stderr)
@@ -295,9 +313,10 @@ def main_http() -> None:
         debug=False,
         routes=[
             Route("/health", health_endpoint),
-            Mount("/mcp", app=JWTAuthMiddleware(mcp_app)),
-            Mount("/messages", app=JWTAuthMiddleware(mcp_app)),
+            Mount("/mcp", app=APIKeyAuthMiddleware(mcp_app)),
+            Mount("/messages", app=APIKeyAuthMiddleware(mcp_app)),
         ],
+        middleware=[Middleware(StripTrailingSlashMiddleware)],
     )
 
     async def run() -> None:

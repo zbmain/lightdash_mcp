@@ -34,6 +34,9 @@ tools:
     description: List all available explores/tables in a project
     category: discovery
     enabled: true
+    defaults:
+      tags:
+        - "msy150"
 
   - name: get-explore-schema
     description: Get detailed schema for a specific explore (dimensions, metrics, joins)
