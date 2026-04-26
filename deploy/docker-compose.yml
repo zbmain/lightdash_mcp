@@ -1,6 +1,6 @@
 services:
   lightdash-mcp:
-    image: registry.cn-hangzhou.aliyuncs.com/winwin/tool:lightdash-mcp-20260424refs
+    image: ${LIGHTDASH_MCP_IMAGE:-registry.cn-hangzhou.aliyuncs.com/winwin/tool:lightdash-mcp-latest}
     container_name: lightdash-mcp
     ports:
       - "${LIGHTDASH_MCP_HTTP_PORT:-8080}:8080"
