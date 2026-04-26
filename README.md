@@ -1,7 +1,7 @@
 # Lightdash MCP Server
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-compatible-green.svg)](https://modelcontextprotocol.io/)
 [![PyPI](https://img.shields.io/pypi/v/lightdash-mcp.svg)](https://pypi.org/project/lightdash-mcp/)
 [![GitHub stars](https://img.shields.io/github/stars/zbmain/lightdash_mcp)](https://github.com/zbmain/lightdash_mcp/stargazers)
@@ -24,7 +24,7 @@ This MCP server provides a comprehensive set of tools for the full data analytic
 
 ### Prerequisites
 
-*   Python 3.10+
+*   Python 3.11+
 *   A Lightdash instance (Cloud or self-hosted)
 *   Lightdash Personal Access Token (obtain from your Lightdash profile settings)
 
@@ -99,7 +99,7 @@ HTTP mode requires additional environment variables:
 
 | Variable | Required | Description | Example |
 | :--- | :---: | :--- | :--- |
-| `LIGHTDASH_MCP_HTTP_APIKEY` | ✅ | JWT signing secret (min 32 bytes recommended) | `your-256-bit-secret` |
+| `LIGHTDASH_MCP_HTTP_APIKEY` | ✅ | Fixed API key for HTTP endpoint authentication | `mashangying` |
 | `LIGHTDASH_MCP_HTTP_HOST` | ❌ | HTTP server bind address (default: `0.0.0.0`) | `127.0.0.1` |
 | `LIGHTDASH_MCP_HTTP_PORT` | ❌ | HTTP server port (default: `8080`) | `9000` |
 
@@ -161,8 +161,8 @@ For remote/multi-client deployments, run the server in HTTP mode:
 # Install with HTTP dependencies
 pip install lightdash-mcp[http]
 
-# Start HTTP server (requires LIGHTDASH_MCP_HTTP_APIKEY)
-LIGHTDASH_MCP_HTTP_APIKEY="your-jwt-secret" \
+# Start HTTP server (requires LIGHTDASH_MCP_HTTP_APIKEY env var)
+LIGHTDASH_MCP_HTTP_APIKEY="your-apikey" \
 LIGHTDASH_URL="https://app.lightdash.cloud" \
 LIGHTDASH_TOKEN="ldt_your_token_here" \
 lightdash-mcp http
@@ -177,15 +177,15 @@ HTTP endpoint: http://host:port/messages/  (POST — client messages, alternativ
 HTTP endpoint: http://host:port/health    (GET  — health check, no auth)
 ```
 
-All MCP endpoints require `Authorization: Bearer <jwt>` header. The JWT payload is validated server-side using `LIGHTDASH_MCP_HTTP_APIKEY`.
+All MCP endpoints require `APIKEY: <your-apikey>` header (fixed plaintext, not JWT).
 
 **Client credential override**: HTTP clients can override server-side Lightdash credentials per-request:
 
 ```
-Authorization: Bearer <jwt>                      # JWT auth (required)
+APIKEY: <your-apikey>                        # API key auth (required)
 X-Lightdash-Url: https://custom.lightdash.cloud  # Override LIGHTDASH_URL
-X-Lightdash-Token: ldt_client_token             # Override LIGHTDASH_TOKEN
-X-Lightdash-Project-Uuid: project-uuid          # Override LIGHTDASH_PROJECT_UUID
+X-Lightdash-Token: ldt_client_token         # Override LIGHTDASH_TOKEN
+X-Lightdash-Project-Uuid: project-uuid      # Override LIGHTDASH_PROJECT_UUID
 ```
 
 Unset headers fall back to the server's environment variables.
@@ -249,6 +249,12 @@ lightdash-mcp
 | `run-dashboard-tiles` | Run queries for dashboard tiles (supports bulk execution) |
 | `run-raw-query` | Execute an ad-hoc metric query against any explore |
 
+### 🌐 External APIs
+
+| Tool | Description |
+| :--- | :--- |
+| `run-question-annotation` | Annotate a natural language question for CPV entities (NER). Extracts time, group, brand, metric, and attribute entities from user questions. Requires `CPVMATCH_APIKEY` environment variable. |
+
 ## Project Structure
 
 ```
@@ -263,7 +269,10 @@ lightdash-mcp
 │   └── tools/                   # Tool implementations
 │       ├── __init__.py          # Auto-discovery and tool registry (YAML filtered)
 │       ├── base_tool.py         # Base tool interface
-│       └── *.py                # Individual tool implementations
+│       └── *.py                 # Individual tool implementations
+├── deploy/                      # Docker deployment
+│   ├── Dockerfile               # Multi-stage production Dockerfile
+│   └── docker-compose.yml       # Container orchestration
 ├── README.md
 └── LICENSE
 ```
@@ -277,17 +286,26 @@ Tools are automatically discovered and filtered via two mechanisms:
 
 ### tools_registry.yml
 
-A centralized YAML configuration (`lightdash_mcp/tools_registry.yml`) controls which tools are active. This allows you to:
-- Enable/disable individual tools without removing code
-- Group tools by category (discovery, chart, dashboard, query, resource)
-- Keep disabled tools in the codebase for future use
+A centralized YAML configuration (`lightdash_mcp/tools_registry.yml`) controls which tools are active.
 
 ```yaml
 tools:
   - name: list-projects
     category: discovery
     enabled: true   # ← only enabled tools are registered
+
+  - name: list-explores
+    category: discovery
+    enabled: true
+    defaults:        # ← optional parameter defaults (merged before tool call)
+      tags:
+        - "msy150"
 ```
+
+Key features:
+- **Enable/disable**: `enabled: true/false` controls registration
+- **Categories**: group tools into logical categories (discovery, chart, dashboard, query, resource, external)
+- **Parameter defaults**: `defaults` field injects default values into tool arguments (user values take precedence)
 
 ### Adding a New Tool
 
@@ -323,6 +341,22 @@ tools:
 ```bash
 # Check that YAML config and discovered tools are in sync
 just validate-registry
+```
+
+### Building a Docker Image
+
+```bash
+# Build and push image to Aliyun registry (linux/amd64)
+just image
+```
+
+Image tag format: `registry.cn-hangzhou.aliyuncs.com/winwin/tool:lightdash-mcp-YYYYMMDDGIT`
+Example: `registry.cn-hangzhou.aliyuncs.com/winwin/tool:lightdash-mcp-20260425f646`
+
+Requires `docker buildx`. The build uses `uv sync` (not wheel) and requires internet access to PyPI. The `--no-cache` flag is used to ensure the latest dependency index is fetched. Override the PyPI mirror with `UV_INDEX_URL` if needed:
+
+```bash
+docker buildx build --build-arg UV_INDEX_URL=https://pypi.org/simple/ -f deploy/Dockerfile --load .
 ```
 
 ### Testing
@@ -362,8 +396,8 @@ If you see connection errors:
 
 If you see `401 Unauthorized` in HTTP mode:
 *   Verify `LIGHTDASH_MCP_HTTP_APIKEY` is set on the server
-*   Ensure the JWT token is valid and not expired
-*   Check the client sends `Authorization: Bearer <token>` header
+*   Ensure the client sends `APIKEY: <your-apikey>` header (not JWT Bearer)
+*   Check the apikey matches the server-side `LIGHTDASH_MCP_HTTP_APIKEY` value
 
 If you see `500 MCP error`:
 *   Check server logs for detailed error messages

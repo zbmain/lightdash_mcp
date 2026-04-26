@@ -1,28 +1,43 @@
 # ============================================================
-# Stage 1: Build wheel
+# Stage 1: Build dependencies and sync project
 # ============================================================
 FROM registry.cn-hangzhou.aliyuncs.com/winwin/tool:python-uv-3.11-slim AS builder
 
 WORKDIR /app
 
+# 允许通过 --build-arg UV_INDEX_URL 覆盖镜像源，默认使用阿里云公网镜像
+ARG UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+
+# 取消镜像内置的 UV_INDEX_URL 和 UV_DEFAULT_INDEX（指向无法访问的内网镜像）
+ENV UV_INDEX_URL=${UV_INDEX_URL}
+ENV UV_DEFAULT_INDEX=${UV_INDEX_URL}
+ENV PIP_INDEX_URL=${UV_INDEX_URL}
+#ENV PIP_EXTRA_INDEX_URL=
+
 # 清除镜像内 pip/uv 内网源配置
-RUN rm -f /etc/pip.conf /root/.pip/pip.conf /root/.config/pip/pip.conf 2>/dev/null || true
+RUN rm -rf /etc/pip.conf /root/.pip /root/.config/pip /etc/uv /root/.config/uv 2>/dev/null || true
 
-# 安装构建工具 build + hatchling（公网源）
+# Install build dependencies (hatchling needed for project sync)
 RUN --mount=type=cache,target=/root/.cache/uv \
-    UV_INDEX_URL=https://pypi.org/simple/ \
-    uv pip install --system build hatchling
+    uv pip install --system --index-url ${UV_INDEX_URL} build hatchling
 
-# 复制源码
+# Install dependencies (without syncing the project)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-editable --index-url ${UV_INDEX_URL}
+
+# Copy source and sync project into the venv
 COPY lightdash_mcp/ ./lightdash_mcp/
 COPY pyproject.toml ./
 COPY README.md .
 COPY CHANGELOG.md .
 COPY LICENSE .
 COPY uv.lock .
-
-# 构建 wheel（python -m build 直接用已安装的 hatchling）
-RUN python -m build --wheel --outdir /dist
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-editable --index-url ${UV_INDEX_URL}
 
 # ============================================================
 # Stage 2: Production runtime
@@ -31,10 +46,8 @@ FROM registry.cn-hangzhou.aliyuncs.com/winwin/tool:python-3.11-slim
 
 WORKDIR /app
 
-# 复制 wheel 并用 pip 安装（该镜像有 pip 但可能无 uv）
-COPY --from=builder /dist /dist
-RUN pip install --no-cache-dir /dist/*.whl
+COPY --from=builder /app /app
 
 EXPOSE 8080
 
-CMD ["lightdash-mcp", "http"]
+CMD ["/app/.venv/bin/lightdash-mcp", "http"]

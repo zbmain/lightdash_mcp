@@ -70,8 +70,20 @@ publish:
 
 image:
     #!/bin/bash
-    TAG=$(date +%Y%m%d)$(git rev-parse refs/remotes/origin/master^{commit} | cut -c 1-4)
-    docker buildx build --build-arg UV_INDEX=https://mirrors.aliyun.com/pypi/simple/ -f deploy/Dockerfile -t registry.cn-hangzhou.aliyuncs.com/winwin/tool:lightdash-mcp-$TAG .
+    set -e
+    # 创建（若不存在）并使用支持多平台的 buildx builder
+    docker buildx create --name multiarch --use --driver docker-container 2>/dev/null || true
+    docker buildx inspect --bootstrap
+
+    TAG=$(date +%Y%m%d)$(git rev-parse refs/remotes/origin/main^{commit} | cut -c 1-4)
+    docker buildx build \
+        --platform linux/amd64 \
+        --no-cache \
+        --build-arg UV_INDEX_URL=https://pypi.org/simple/ \
+        -f deploy/Dockerfile \
+        -t registry.cn-hangzhou.aliyuncs.com/winwin/tool:lightdash-mcp-${TAG} \
+        --load \
+        .
 
 # 进入 uv 虚拟环境
 shell:
