@@ -425,7 +425,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-* [ccstatusline/lightdash_mcp](https://github.com/poddubnyoleg/lightdash_mcp) - Original project this fork is based on.
+* [poddubnyoleg/lightdash_mcp](https://github.com/poddubnyoleg/lightdash_mcp) - Original project this fork is based on.
 
 ## Support
 

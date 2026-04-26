@@ -332,7 +332,7 @@ just validate-registry
 
 ## 致谢
 
-* [ccstatusline/lightdash_mcp](https://github.com/poddubnyoleg/lightdash_mcp) - 原始项目，本 fork 基于此。
+* [poddubnyoleg/lightdash_mcp](https://github.com/poddubnyoleg/lightdash_mcp) - 原始项目，本 fork 基于此。
 
 ## 获取支持
 
